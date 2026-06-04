@@ -13,6 +13,7 @@ import {
   UserRound,
   UsersRound,
 } from 'lucide-react'
+import CaptureInput from './capture-input'
 
 const navigation = [
   { label: 'Cockpit', href: '/management', icon: LayoutDashboard },
@@ -33,6 +34,7 @@ export default function LeadershipShell({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-screen bg-[var(--retro-bg)] text-[var(--retro-ink)]">
+      <CaptureInput />
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-black/5 bg-white/92 p-4 shadow-xl shadow-zinc-950/5 backdrop-blur-xl lg:flex">
         <Link href="/management" className="flex items-center gap-3 px-2 py-3">
           <Image src="/retro-mark.svg" alt="" width={38} height={38} className="h-10 w-10 rounded-2xl" />
@@ -71,7 +73,7 @@ export default function LeadershipShell({ children }: { children: React.ReactNod
               <UserRound size={18} />
             </span>
             <div className="min-w-0">
-              <p className="truncate text-sm font-black text-zinc-900">Gestora do time</p>
+              <p className="truncate text-sm font-black text-zinc-900">Joana</p>
               <p className="truncate text-xs font-semibold text-zinc-400">Perfil de liderança</p>
             </div>
           </div>
