@@ -1,330 +1,312 @@
 'use client'
 
-import type { ElementType } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useMemo, useState } from 'react'
 import {
-  ArrowRight,
-  BriefcaseBusiness,
+  AlertTriangle,
   CalendarDays,
-  CheckCircle2,
-  ChevronRight,
-  CircleDot,
-  ClipboardCheck,
-  Eye,
-  FileSearch,
-  Filter,
-  GitBranch,
-  Lightbulb,
-  ListChecks,
-  MessageSquareText,
+  CheckSquare,
   Plus,
-  Search,
-  Sparkles,
-  Target,
-  UserRound,
+  Square,
+  ThermometerSun,
+  Users,
 } from 'lucide-react'
+import { loadFronts, type ManagementFront } from '@/lib/fronts'
+import { loadTasks, saveTasks, createEmptyTask, type Task } from '@/lib/tasks'
+import { loadPeople, type LeadershipPerson } from '@/lib/people'
+import { loadRetroSnapshots, type RetroSnapshot } from '@/lib/management'
 
-const topics = ['Sobrecarga', 'Priorização', 'Desenvolvimento', 'Dependências entre times', 'Comunicação']
-
-const nextSteps = [
-  {
-    title: 'Criar frente de prioridades',
-    description: 'Definir critérios e cadência.',
-    meta: 'Até 30 jun',
-    href: '/frentes',
-    icon: GitBranch,
-    tone: 'bg-violet-50 text-violet-600',
-  },
-  {
-    title: 'Agendar alinhamento',
-    description: 'Tratar dependências e fechar próximos passos.',
-    meta: 'Até 26 jun',
-    href: '/decisoes',
-    icon: CalendarDays,
-    tone: 'bg-sky-50 text-sky-600',
-  },
-  {
-    title: 'Revisar PDI em foco',
-    description: 'Checar evidências e próximo salto.',
-    meta: 'Até 30 jun',
-    href: '/pessoas',
-    icon: UserRound,
-    tone: 'bg-emerald-50 text-emerald-600',
-  },
-  {
-    title: 'Monitorar capacidade do time',
-    description: 'Acompanhar carga nas próximas semanas.',
-    meta: 'Contínuo',
-    href: '/frentes',
-    icon: Eye,
-    tone: 'bg-amber-50 text-amber-600',
-  },
-]
-
-const retros = [
-  {
-    month: 'Mai/2026',
-    mood: 'Estável com atenção',
-    moodTone: 'bg-amber-50 text-amber-700',
-    topics: ['Sobrecarga', 'Priorização', 'Desenvolvimento'],
-    actions: '6 ações',
-    status: 'Em andamento',
-    statusTone: 'text-amber-700',
-  },
-  {
-    month: 'Abr/2026',
-    mood: 'Positivo',
-    moodTone: 'bg-emerald-50 text-emerald-700',
-    topics: ['Comunicação', 'Rituais', 'Priorização'],
-    actions: '5 ações',
-    status: 'Concluídas',
-    statusTone: 'text-emerald-700',
-  },
-  {
-    month: 'Mar/2026',
-    mood: 'Neutro',
-    moodTone: 'bg-zinc-100 text-zinc-600',
-    topics: ['Dependências', 'Processos', 'Foco'],
-    actions: '4 ações',
-    status: 'Em andamento',
-    statusTone: 'text-amber-700',
-  },
-]
-
-const classifications = [
-  { label: 'Frente', description: 'Vira ou atualiza uma frente.', href: '/frentes', tone: 'bg-violet-50 text-violet-700' },
-  { label: 'Ação', description: 'Tarefa com responsável.', href: '/frentes', tone: 'bg-amber-50 text-amber-700' },
-  { label: 'Decisão', description: 'Escolha que precisa registro.', href: '/decisoes', tone: 'bg-sky-50 text-sky-700' },
-  { label: 'PDI', description: 'Desenvolvimento individual.', href: '/pessoas', tone: 'bg-emerald-50 text-emerald-700' },
-  { label: 'Monitoramento', description: 'Acompanhar ao longo do tempo.', href: '/frentes', tone: 'bg-orange-50 text-orange-700' },
-  { label: 'FCA', description: 'Usar só quando fizer sentido.', href: '/frentes', tone: 'bg-rose-50 text-rose-700' },
-]
-
-const kpis: Array<{ label: string; value: string; detail: string; icon: ElementType; tone: string; href: string }> = [
-  { label: 'Mood atual', value: 'Estável com atenção', detail: 'Capacidade e foco pedem cuidado', icon: CircleDot, tone: 'bg-amber-50 text-amber-600', href: '#ultima-retro' },
-  { label: 'Temas recorrentes', value: '5', detail: '2 aparecem há três ciclos', icon: MessageSquareText, tone: 'bg-violet-50 text-violet-600', href: '#ultima-retro' },
-  { label: 'Viraram frente', value: '3', detail: '1 atualizou frente existente', icon: BriefcaseBusiness, tone: 'bg-emerald-50 text-emerald-600', href: '/frentes' },
-  { label: 'Itens em observação', value: '4', detail: 'Sem necessidade de ação agora', icon: Eye, tone: 'bg-sky-50 text-sky-600', href: '/frentes' },
-]
-
-function SectionLink({ href, children }: { href: string; children: React.ReactNode }) {
-  return (
-    <Link href={href} className="inline-flex items-center gap-1.5 text-xs font-black text-[var(--retro-wine)] transition hover:gap-2.5">
-      {children}
-      <ArrowRight size={14} />
-    </Link>
-  )
+function formatDate(iso: string) {
+  if (!iso) return ''
+  const d = new Date(iso)
+  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
-export default function DashboardPage() {
-  const [search, setSearch] = useState('')
-  const [onlyOpen, setOnlyOpen] = useState(false)
-  const filteredRetros = useMemo(() => retros.filter(retro => {
-    const matchesSearch = !search || [retro.month, retro.mood, ...retro.topics].join(' ').toLocaleLowerCase('pt-BR').includes(search.toLocaleLowerCase('pt-BR'))
-    return matchesSearch && (!onlyOpen || retro.status !== 'Concluídas')
-  }), [onlyOpen, search])
+function todayGreeting() {
+  const now = new Date()
+  const hour = now.getHours()
+  if (hour < 12) return 'Bom dia'
+  if (hour < 18) return 'Boa tarde'
+  return 'Boa noite'
+}
+
+function formattedToday() {
+  return new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })
+}
+
+const temperatureStyle: Record<string, string> = {
+  Crítica: 'bg-rose-50 text-rose-700 border-rose-200',
+  Atenção: 'bg-amber-50 text-amber-700 border-amber-200',
+  Saudável: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+}
+
+const temperatureDot: Record<string, string> = {
+  Crítica: 'bg-rose-500',
+  Atenção: 'bg-amber-400',
+  Saudável: 'bg-emerald-500',
+}
+
+const attentionStyle: Record<string, string> = {
+  'Dar autonomia': 'bg-violet-50 text-violet-700',
+  'Desafiar': 'bg-sky-50 text-sky-700',
+  'Cuidar': 'bg-rose-50 text-rose-700',
+  'Desenvolver': 'bg-emerald-50 text-emerald-700',
+  'Monitorar carga': 'bg-amber-50 text-amber-700',
+}
+
+export default function HojePage() {
+  const [fronts, setFronts] = useState<ManagementFront[]>([])
+  const [tasks, setTasks] = useState<Task[]>([])
+  const [people, setPeople] = useState<LeadershipPerson[]>([])
+  const [snapshots, setSnapshots] = useState<RetroSnapshot[]>([])
+  const [newTaskText, setNewTaskText] = useState('')
+
+  useEffect(() => {
+    setFronts(loadFronts())
+    setTasks(loadTasks())
+    setPeople(loadPeople())
+    setSnapshots(loadRetroSnapshots())
+  }, [])
+
+  // Frentes em atenção ou crítica
+  const urgentFronts = fronts.filter(f => f.temperature === 'Crítica' || f.temperature === 'Atenção')
+
+  // Tasks abertas (status !== Concluída)
+  const openTasks = tasks.filter(t => t.status !== 'Concluída')
+
+  // Pessoas ordenadas por nextOneOnOne mais próximo
+  const sortedPeople = [...people]
+    .filter(p => p.nextOneOnOne)
+    .sort((a, b) => a.nextOneOnOne.localeCompare(b.nextOneOnOne))
+
+  // Último snapshot de retro
+  const lastSnapshot = [...snapshots].sort((a, b) => b.date.localeCompare(a.date))[0] ?? null
+
+  function handleAddTask() {
+    const text = newTaskText.trim()
+    if (!text) return
+    const task = createEmptyTask({ text })
+    const updated = [...tasks, task]
+    setTasks(updated)
+    saveTasks(updated)
+    setNewTaskText('')
+  }
+
+  function handleToggleTask(id: string) {
+    const updated = tasks.map(t =>
+      t.id === id ? { ...t, status: (t.status === 'Concluída' ? 'Aberta' : 'Concluída') as Task['status'], updatedAt: new Date().toISOString() } : t
+    )
+    setTasks(updated)
+    saveTasks(updated)
+  }
 
   return (
     <main className="min-h-screen bg-[var(--retro-bg)] px-4 py-7 text-[var(--retro-ink)] sm:px-7 lg:px-9 lg:py-9">
-      <div className="mx-auto max-w-[1480px]">
-        <header className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-          <div>
-            <h1 className="text-3xl font-black tracking-tight sm:text-4xl">Retro Qualitativa</h1>
-            <p className="mt-2 text-sm font-medium text-zinc-500">Pulso do time, temas recorrentes e conversão de sinais em ação.</p>
-          </div>
+      <div className="mx-auto max-w-[1200px] space-y-7">
 
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <label className="flex min-w-0 items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 py-2.5 shadow-sm sm:w-72">
-              <Search size={17} className="shrink-0 text-zinc-400" />
-              <span className="sr-only">Buscar na retro qualitativa</span>
-              <input value={search} onChange={event => setSearch(event.target.value)} className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-zinc-400" placeholder="Buscar histórico e temas..." />
-            </label>
-            <button type="button" onClick={() => setOnlyOpen(value => !value)} className={`inline-flex items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-bold shadow-sm transition ${onlyOpen ? 'border-[var(--retro-wine)] bg-[rgba(135,0,47,0.08)] text-[var(--retro-wine)]' : 'border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50'}`}>
-              <Filter size={16} />
-              {onlyOpen ? 'Só em aberto' : 'Mostrar em aberto'}
-            </button>
-            <button type="button" onClick={() => window.dispatchEvent(new Event('open-capture-input'))} className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--retro-wine)] px-4 py-2.5 text-sm font-black text-white shadow-lg shadow-[rgba(135,0,47,0.18)] transition hover:bg-[var(--retro-wine-deep)]">
-              <Plus size={17} />
-              Capturar sinal
-            </button>
-          </div>
+        {/* Header */}
+        <header>
+          <h1 className="text-3xl font-black tracking-tight sm:text-4xl">
+            {todayGreeting()}, Joana
+          </h1>
+          <p className="mt-1 text-sm font-medium capitalize text-zinc-500">{formattedToday()}</p>
         </header>
 
-        <p className="mt-3 text-xs font-medium text-zinc-400">
-          A busca e o filtro abaixo afetam o histórico de retros.
-        </p>
+        <div className="grid gap-5 xl:grid-cols-[1fr_380px]">
+          <div className="space-y-5">
 
-        <section aria-label="Indicadores da retro" className="mt-7 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {kpis.map(({ label, value, detail, icon: Icon, tone, href }) => (
-            <Link key={label} href={href} className="group rounded-2xl border border-black/5 bg-white p-4 shadow-sm shadow-zinc-950/5 transition hover:-translate-y-0.5 hover:shadow-md">
-              <div className="flex items-center gap-3">
-                <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl ${tone}`}>
-                  <Icon size={21} />
-                </span>
-                <div className="min-w-0">
-                  <p className="text-xs font-bold text-zinc-500">{label}</p>
-                  <p className={`${value.length > 6 ? 'text-lg' : 'text-2xl'} mt-0.5 font-black tracking-tight text-zinc-900`}>{value}</p>
-                  <p className="mt-0.5 truncate text-xs text-zinc-400">{detail}</p>
-                </div>
+            {/* ── Atenção agora ── */}
+            <section className="rounded-3xl border border-black/5 bg-white p-5 shadow-sm shadow-zinc-950/5 sm:p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <AlertTriangle size={18} className="text-rose-500" />
+                <h2 className="text-base font-black uppercase tracking-[0.1em] text-zinc-400">Atenção agora</h2>
               </div>
-            </Link>
-          ))}
-        </section>
-
-        <section className="mt-5 grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
-          <article id="ultima-retro" className="rounded-3xl border border-black/5 bg-white p-5 shadow-sm shadow-zinc-950/5 sm:p-6">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                <h2 className="text-lg font-black">Última retro</h2>
-                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-400"><CalendarDays size={14} /> 29 de mai. de 2026</span>
-                <span className="text-xs font-semibold text-zinc-400">12 participantes</span>
-              </div>
-              <SectionLink href="#historico">Ver histórico</SectionLink>
-            </div>
-
-            <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50/60 p-4">
-              <div className="flex items-start gap-3">
-                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-white text-amber-600 shadow-sm"><CircleDot size={21} /></span>
-                <div>
-                  <p className="font-black text-zinc-900">Estável com sinais de sobrecarga</p>
-                  <p className="mt-1 text-sm leading-6 text-zinc-500">Atenção à capacidade e ao foco do time nas próximas semanas.</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-5">
-              <p className="text-xs font-black uppercase tracking-[0.13em] text-zinc-400">Temas mais recorrentes</p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {topics.map((topic, index) => (
-                  <span key={topic} className={`rounded-full px-3 py-1.5 text-xs font-bold ${index === 0 ? 'bg-rose-50 text-rose-700' : index === 1 ? 'bg-amber-50 text-amber-700' : index === 2 ? 'bg-violet-50 text-violet-700' : 'bg-sky-50 text-sky-700'}`}>{topic}</span>
-                ))}
-              </div>
-            </div>
-
-            <div className="mt-5 grid gap-4 border-t border-zinc-100 pt-5 md:grid-cols-3">
-              <div>
-                <p className="flex items-center gap-2 text-sm font-black"><GitBranch size={16} className="text-emerald-600" /> O que virou frente</p>
-                <ul className="mt-3 space-y-2 text-xs leading-5 text-zinc-500">
-                  <li>Governança de prioridades</li>
-                  <li>Desenvolvimento de autonomia</li>
-                  <li>Atualização da frente de capacidade</li>
-                </ul>
-                <div className="mt-3"><SectionLink href="/frentes">Ver frentes</SectionLink></div>
-              </div>
-              <div className="border-zinc-100 md:border-l md:pl-4">
-                <p className="flex items-center gap-2 text-sm font-black"><ListChecks size={16} className="text-amber-600" /> O que virou ação</p>
-                <ul className="mt-3 space-y-2 text-xs leading-5 text-zinc-500">
-                  <li>Revisar critérios de priorização</li>
-                  <li>Alinhar bloqueios entre times</li>
-                  <li>Preparar decisão de capacidade</li>
-                </ul>
-                <div className="mt-3"><SectionLink href="/decisoes">Ver decisões</SectionLink></div>
-              </div>
-              <div className="border-zinc-100 md:border-l md:pl-4">
-                <p className="flex items-center gap-2 text-sm font-black"><Eye size={16} className="text-sky-600" /> O que ficou em observação</p>
-                <ul className="mt-3 space-y-2 text-xs leading-5 text-zinc-500">
-                  <li>Foco do time nas próximas semanas</li>
-                  <li>Dependências com área parceira</li>
-                  <li>Clareza dos papéis no ritual</li>
-                </ul>
-              </div>
-            </div>
-          </article>
-
-          <article className="rounded-3xl border border-black/5 bg-white p-5 shadow-sm shadow-zinc-950/5 sm:p-6">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <h2 className="text-lg font-black">Próximos passos do ciclo</h2>
-                <p className="mt-1 text-xs text-zinc-400">Sinais validados viram ação aqui.</p>
-              </div>
-              <ClipboardCheck size={20} className="text-[var(--retro-wine)]" />
-            </div>
-            <div className="mt-5 divide-y divide-zinc-100 overflow-hidden rounded-2xl border border-zinc-100">
-              {nextSteps.map(({ title, description, meta, href, icon: Icon, tone }) => (
-                <Link key={title} href={href} className="group flex items-center gap-3 p-3.5 transition hover:bg-zinc-50">
-                  <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${tone}`}><Icon size={18} /></span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-black text-zinc-900">{title}</span>
-                    <span className="mt-0.5 block text-xs leading-5 text-zinc-400">{description}</span>
-                  </span>
-                  <span className="shrink-0 text-right text-xs font-bold text-zinc-500">{meta}</span>
-                  <ChevronRight size={15} className="shrink-0 text-zinc-300 transition group-hover:translate-x-0.5 group-hover:text-[var(--retro-wine)]" />
-                </Link>
-              ))}
-            </div>
-            <div className="mt-4 text-center"><SectionLink href="/frentes">Ver todos os próximos passos</SectionLink></div>
-          </article>
-        </section>
-
-        <section className="mt-5 grid gap-5 xl:grid-cols-[1.25fr_0.75fr]">
-          <article id="historico" className="overflow-hidden rounded-3xl border border-black/5 bg-white shadow-sm shadow-zinc-950/5">
-            <div className="flex items-center justify-between gap-3 px-5 py-5 sm:px-6">
-              <div>
-                <h2 className="text-lg font-black">Histórico de retros</h2>
-                <p className="mt-1 text-xs text-zinc-400">Busca e filtro alteram esta lista.</p>
-              </div>
-              <FileSearch size={20} className="text-[var(--retro-wine)]" />
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[720px] text-left text-xs">
-                <thead className="border-y border-zinc-100 bg-zinc-50/70 text-zinc-400">
-                  <tr>
-                    <th className="px-6 py-3 font-bold">Mês</th>
-                    <th className="px-4 py-3 font-bold">Mood</th>
-                    <th className="px-4 py-3 font-bold">Top temas</th>
-                    <th className="px-4 py-3 font-bold">Ações geradas</th>
-                    <th className="px-4 py-3 font-bold">Status das ações</th>
-                    <th className="px-4 py-3" aria-label="Abrir retro" />
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-100">
-                  {filteredRetros.map(retro => (
-                    <tr key={retro.month} className="transition hover:bg-zinc-50/70">
-                      <td className="px-6 py-4 font-black text-zinc-900">{retro.month}</td>
-                      <td className="px-4 py-4"><span className={`rounded-full px-2.5 py-1 font-bold ${retro.moodTone}`}>{retro.mood}</span></td>
-                      <td className="px-4 py-4">
-                        <div className="flex flex-wrap gap-1.5">{retro.topics.map(topic => <span key={topic} className="rounded-full bg-zinc-100 px-2 py-1 font-semibold text-zinc-600">{topic}</span>)}</div>
-                      </td>
-                      <td className="px-4 py-4 font-bold text-zinc-700">{retro.actions}</td>
-                      <td className={`px-4 py-4 font-bold ${retro.statusTone}`}>{retro.status}</td>
-                      <td className="px-4 py-4"><ChevronRight size={15} className="text-zinc-300" /></td>
-                    </tr>
+              {urgentFronts.length === 0 ? (
+                <p className="text-sm text-zinc-400">Nenhuma frente em atenção ou crítica no momento.</p>
+              ) : (
+                <ul className="space-y-3">
+                  {urgentFronts.map(front => (
+                    <li key={front.id}>
+                      <Link
+                        href="/frentes"
+                        className="flex items-start gap-3 rounded-2xl border border-zinc-100 p-3.5 transition hover:bg-zinc-50"
+                      >
+                        <span className={`mt-0.5 h-2.5 w-2.5 shrink-0 rounded-full ${temperatureDot[front.temperature] ?? 'bg-zinc-400'}`} />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-black text-zinc-900">{front.name}</span>
+                            <span className={`rounded-full border px-2.5 py-0.5 text-xs font-bold ${temperatureStyle[front.temperature] ?? ''}`}>
+                              {front.temperature}
+                            </span>
+                          </div>
+                          {(front.nextStep || front.description) && (
+                            <p className="mt-1 text-xs leading-5 text-zinc-500 line-clamp-2">
+                              {front.nextStep || front.description}
+                            </p>
+                          )}
+                        </div>
+                      </Link>
+                    </li>
                   ))}
-                </tbody>
-              </table>
-              {!filteredRetros.length && <p className="p-8 text-center text-sm text-zinc-500">Nenhuma retro encontrada. Limpe a busca ou o filtro.</p>}
-            </div>
-            <div className="border-t border-zinc-100 px-6 py-4 text-center"><SectionLink href="#historico">Ver histórico completo</SectionLink></div>
-          </article>
+                </ul>
+              )}
+            </section>
 
-          <aside className="rounded-3xl border border-black/5 bg-white p-5 shadow-sm shadow-zinc-950/5 sm:p-6">
-            <div className="flex items-start gap-3">
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[rgba(135,0,47,0.08)] text-[var(--retro-wine)]"><Lightbulb size={18} /></span>
-              <div>
-                <h2 className="text-lg font-black">Como classificar um sinal</h2>
-                <p className="mt-1 text-xs leading-5 text-zinc-400">A IA sugere. A gestora valida, edita e decide o destino.</p>
+            {/* ── Minhas tasks ── */}
+            <section className="rounded-3xl border border-black/5 bg-white p-5 shadow-sm shadow-zinc-950/5 sm:p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <CheckSquare size={18} className="text-[var(--retro-wine)]" />
+                <h2 className="text-base font-black uppercase tracking-[0.1em] text-zinc-400">Minhas tasks</h2>
               </div>
-            </div>
-            <div className="mt-5 space-y-2">
-              {classifications.map(item => (
-                <Link key={item.label} href={item.href} className="group flex items-start gap-3 rounded-xl p-2 transition hover:bg-zinc-50">
-                  <span className={`w-24 shrink-0 rounded-full px-2.5 py-1 text-center text-[11px] font-black ${item.tone}`}>{item.label}</span>
-                  <span className="text-xs leading-5 text-zinc-500">{item.description}</span>
-                </Link>
-              ))}
-            </div>
-            <div className="mt-5 rounded-2xl border border-[rgba(135,0,47,0.12)] bg-[rgba(135,0,47,0.04)] p-4">
-              <p className="flex items-center gap-2 text-xs font-black text-[var(--retro-wine)]"><Sparkles size={15} /> Regra de classificação</p>
-              <p className="mt-2 text-xs leading-5 text-zinc-500">FCA não é o padrão. Antes de criar algo novo, a gestora pode editar a sugestão ou usar o sinal para atualizar uma frente existente.</p>
-            </div>
-          </aside>
-        </section>
 
-        <footer className="mt-5 flex flex-col gap-2 rounded-2xl border border-black/5 bg-white/70 px-4 py-3 text-xs text-zinc-400 sm:flex-row sm:items-center sm:justify-between">
-          <span className="inline-flex items-center gap-2"><CheckCircle2 size={14} className="text-emerald-600" /> Última retro consolidada e pronta para acompanhamento.</span>
-          <Link href="/frentes" className="inline-flex items-center gap-1.5 font-black text-[var(--retro-wine)]">Revisar frentes atualizadas <Target size={14} /></Link>
-        </footer>
+              {openTasks.length === 0 ? (
+                <p className="mb-4 text-sm text-zinc-400">Nenhuma task aberta. Adicione a primeira abaixo.</p>
+              ) : (
+                <ul className="mb-4 space-y-2">
+                  {openTasks.map(task => {
+                    const front = task.frontId ? fronts.find(f => f.id === task.frontId) : null
+                    return (
+                      <li key={task.id} className="flex items-start gap-3 rounded-xl px-1 py-1.5">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleTask(task.id)}
+                          aria-label={task.status === 'Concluída' ? 'Marcar como aberta' : 'Marcar como concluída'}
+                          className="mt-0.5 shrink-0 text-zinc-400 transition hover:text-[var(--retro-wine)]"
+                        >
+                          <Square size={17} />
+                        </button>
+                        <div className="min-w-0 flex-1">
+                          <span className="text-sm font-semibold text-zinc-800">{task.text}</span>
+                          <div className="mt-0.5 flex flex-wrap items-center gap-2">
+                            {task.dueDate && (
+                              <span className="flex items-center gap-1 text-xs text-zinc-400">
+                                <CalendarDays size={12} />
+                                {formatDate(task.dueDate)}
+                              </span>
+                            )}
+                            {front && (
+                              <span className="rounded-full bg-violet-50 px-2 py-0.5 text-xs font-bold text-violet-700">
+                                {front.name}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+
+              {/* Quick add */}
+              <form
+                onSubmit={e => { e.preventDefault(); handleAddTask() }}
+                className="flex gap-2"
+              >
+                <input
+                  type="text"
+                  value={newTaskText}
+                  onChange={e => setNewTaskText(e.target.value)}
+                  placeholder="Nova task..."
+                  className="min-w-0 flex-1 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none placeholder:text-zinc-400 focus:border-[var(--retro-wine)] focus:ring-1 focus:ring-[var(--retro-wine)]"
+                />
+                <button
+                  type="submit"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--retro-wine)] px-4 py-2 text-sm font-black text-white shadow-sm transition hover:bg-[var(--retro-wine-deep)]"
+                >
+                  <Plus size={15} />
+                  Add
+                </button>
+              </form>
+            </section>
+
+          </div>
+
+          <div className="space-y-5">
+
+            {/* ── Próximos 1:1s ── */}
+            <section className="rounded-3xl border border-black/5 bg-white p-5 shadow-sm shadow-zinc-950/5 sm:p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Users size={18} className="text-sky-500" />
+                <h2 className="text-base font-black uppercase tracking-[0.1em] text-zinc-400">Próximos 1:1s</h2>
+              </div>
+
+              {sortedPeople.length === 0 ? (
+                <p className="text-sm text-zinc-400">Nenhuma pessoa com 1:1 agendado.</p>
+              ) : (
+                <ul className="space-y-3">
+                  {sortedPeople.slice(0, 6).map(person => (
+                    <li key={person.id}>
+                      <Link
+                        href="/pessoas"
+                        className="flex items-center gap-3 rounded-xl px-1 py-1.5 transition hover:bg-zinc-50"
+                      >
+                        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[var(--retro-wine)] text-xs font-black text-white uppercase">
+                          {person.name.slice(0, 2)}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-black text-zinc-900">{person.name}</p>
+                          <p className="flex items-center gap-1 text-xs text-zinc-400">
+                            <CalendarDays size={11} />
+                            {formatDate(person.nextOneOnOne)}
+                          </p>
+                        </div>
+                        <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-bold ${attentionStyle[person.attention] ?? 'bg-zinc-100 text-zinc-600'}`}>
+                          {person.attention}
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+
+            {/* ── Pulso da retro ── */}
+            <section className="rounded-3xl border border-black/5 bg-white p-5 shadow-sm shadow-zinc-950/5 sm:p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <ThermometerSun size={18} className="text-emerald-500" />
+                <h2 className="text-base font-black uppercase tracking-[0.1em] text-zinc-400">Pulso da retro</h2>
+              </div>
+
+              {!lastSnapshot ? (
+                <p className="text-sm text-zinc-400">Nenhum snapshot de retro registrado ainda.</p>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-xs text-zinc-400">
+                    Último snapshot: <span className="font-bold text-zinc-600">{formatDate(lastSnapshot.date)}</span>
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-2xl bg-emerald-50">
+                      <span className="text-xl font-black text-emerald-700">{lastSnapshot.moodAverage.toFixed(1)}</span>
+                      <span className="text-[10px] font-bold text-emerald-500">mood</span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-zinc-700">{lastSnapshot.title}</p>
+                      <p className="text-xs text-zinc-400">{lastSnapshot.itemCount} cards · {lastSnapshot.moodCount} respostas</p>
+                    </div>
+                  </div>
+                  {lastSnapshot.themes.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {lastSnapshot.themes.map(theme => (
+                        <span key={theme} className="rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-semibold text-zinc-600">
+                          {theme}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="pt-1">
+                    <Link
+                      href="/retro"
+                      className="text-xs font-black text-[var(--retro-wine)] transition hover:underline"
+                    >
+                      Ver histórico de retros →
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </section>
+
+          </div>
+        </div>
       </div>
     </main>
   )

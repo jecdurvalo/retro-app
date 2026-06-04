@@ -13,6 +13,36 @@ export type FrontStatus = (typeof frontStatuses)[number]
 export type FrontOrigin = (typeof frontOrigins)[number]
 export type ManagerIntervention = (typeof managerInterventions)[number]
 
+export const fcaStatuses = ['Em andamento', 'Concluído', 'Bloqueado'] as const
+export type FcaStatus = (typeof fcaStatuses)[number]
+
+export type FCA = {
+  id: string
+  fact: string
+  cause: string
+  action: string
+  owner: string
+  dueDate: string
+  status: FcaStatus
+  createdAt: string
+  updatedAt: string
+}
+
+export function createEmptyFCA(): FCA {
+  const now = new Date().toISOString()
+  return {
+    id: typeof crypto?.randomUUID === 'function' ? crypto.randomUUID() : `fca-${Date.now()}`,
+    fact: '',
+    cause: '',
+    action: '',
+    owner: '',
+    dueDate: '',
+    status: 'Em andamento',
+    createdAt: now,
+    updatedAt: now,
+  }
+}
+
 export type ManagementFront = {
   id: string
   name: string
@@ -31,135 +61,18 @@ export type ManagementFront = {
   relatedDecisions: string[]
   relatedTasks: string[]
   evidence: string[]
+  fcas: FCA[]
   createdAt: string
   updatedAt: string
 }
 
-export const initialFronts: ManagementFront[] = [
-  {
-    id: 'front-onboarding',
-    name: 'Redesenho do onboarding de clientes',
-    description: 'Reduzir o tempo até o primeiro valor percebido e os chamados iniciais.',
-    type: 'Projeto',
-    owner: 'Marina Costa',
-    involvedPeople: ['Rafael Lima', 'Bianca Souza'],
-    stakeholders: ['Customer Success', 'Produto'],
-    temperature: 'Atenção',
-    status: 'Em andamento',
-    origin: 'Planejamento',
-    managerIntervention: 'Alinhar stakeholders',
-    nextCheckpoint: '2026-06-09',
-    nextStep: 'Validar a nova jornada e selecionar clientes para o piloto.',
-    risks: ['Capacidade limitada para instrumentar eventos'],
-    relatedDecisions: ['Priorizar eventos de produto no próximo ciclo'],
-    relatedTasks: ['Selecionar clientes do piloto'],
-    evidence: ['Mapa da jornada revisado'],
-    createdAt: '2026-04-07T12:00:00.000Z',
-    updatedAt: '2026-06-02T15:30:00.000Z',
-  },
-  {
-    id: 'front-data',
-    name: 'Confiabilidade dos indicadores executivos',
-    description: 'Eliminar divergências entre os painéis usados nas reuniões de gestão.',
-    type: 'Risco',
-    owner: 'Diego Martins',
-    involvedPeople: ['Ana Ribeiro'],
-    stakeholders: ['Financeiro', 'Dados', 'Diretoria Comercial'],
-    temperature: 'Crítica',
-    status: 'Bloqueada',
-    origin: 'Reunião',
-    managerIntervention: 'Decidir',
-    nextCheckpoint: '2026-06-06',
-    nextStep: 'Levar as definições divergentes para decisão no comitê.',
-    risks: ['Decisões comerciais com números inconsistentes'],
-    relatedDecisions: ['Definir regra oficial de receita líquida'],
-    relatedTasks: ['Preparar reconciliação financeira'],
-    evidence: ['Divergência documentada em dois painéis'],
-    createdAt: '2026-03-18T14:00:00.000Z',
-    updatedAt: '2026-05-21T18:10:00.000Z',
-  },
-  {
-    id: 'front-support',
-    name: 'Recuperação do SLA de suporte',
-    description: 'Estabilizar a fila crítica e recuperar previsibilidade no atendimento.',
-    type: 'Melhoria',
-    owner: 'Camila Freitas',
-    involvedPeople: ['Lucas Nunes'],
-    stakeholders: ['Suporte', 'Engenharia de Plataforma'],
-    temperature: 'Crítica',
-    status: 'Em andamento',
-    origin: 'Retro',
-    managerIntervention: 'Desbloquear',
-    nextCheckpoint: '2026-06-05',
-    nextStep: 'Definir reforço temporário de engenharia por duas semanas.',
-    risks: ['Entrada de chamados supera a capacidade de resolução'],
-    relatedDecisions: ['Alocação temporária de engenharia'],
-    relatedTasks: ['Consolidar fila crítica'],
-    evidence: ['SLA crítico abaixo da meta'],
-    createdAt: '2026-05-12T13:00:00.000Z',
-    updatedAt: '2026-06-04T11:20:00.000Z',
-  },
-  {
-    id: 'front-pricing',
-    name: 'Revisão de pacotes e pricing',
-    description: 'Simplificar a oferta comercial e melhorar margem nas novas vendas.',
-    type: 'Oportunidade',
-    owner: '',
-    involvedPeople: ['Comercial', 'Financeiro', 'Produto'],
-    stakeholders: ['Diretoria Comercial'],
-    temperature: 'Atenção',
-    status: 'Não iniciada',
-    origin: 'Planejamento',
-    managerIntervention: 'Desenvolver dono',
-    nextCheckpoint: '',
-    nextStep: 'Definir sponsor e dono operacional.',
-    risks: ['Perder a janela do planejamento do semestre'],
-    relatedDecisions: ['Nomear responsável principal'],
-    relatedTasks: [],
-    evidence: [],
-    createdAt: '2026-05-27T16:00:00.000Z',
-    updatedAt: '2026-05-27T16:00:00.000Z',
-  },
-  {
-    id: 'front-development',
-    name: 'Evolução de autonomia da liderança de operações',
-    description: 'Ampliar autonomia para conduzir decisões e alinhamentos entre áreas.',
-    type: 'PDI',
-    owner: 'Marina Costa',
-    involvedPeople: ['Joana'],
-    stakeholders: ['People'],
-    temperature: 'Saudável',
-    status: 'Em andamento',
-    origin: '1:1',
-    managerIntervention: 'Monitorar',
-    nextCheckpoint: '2026-06-11',
-    nextStep: 'Revisar evidências de decisões conduzidas com autonomia.',
-    risks: [],
-    relatedDecisions: [],
-    relatedTasks: ['Registrar evidências do ciclo'],
-    evidence: ['Três alinhamentos conduzidos sem escalonamento'],
-    createdAt: '2026-05-01T12:00:00.000Z',
-    updatedAt: '2026-06-03T12:00:00.000Z',
-  },
-]
-
-function cloneFront(front: ManagementFront): ManagementFront {
-  return {
-    ...front,
-    involvedPeople: [...front.involvedPeople],
-    stakeholders: [...front.stakeholders],
-    risks: [...front.risks],
-    relatedDecisions: [...front.relatedDecisions],
-    relatedTasks: [...front.relatedTasks],
-    evidence: [...front.evidence],
-  }
-}
+export const initialFronts: ManagementFront[] = []
 
 export function createEmptyFront(): ManagementFront {
   const now = new Date().toISOString()
   return {
     id: typeof crypto?.randomUUID === 'function' ? crypto.randomUUID() : `front-${Date.now()}`,
-    name: 'Nova frente',
+    name: '',
     description: '',
     type: 'Projeto',
     owner: '',
@@ -175,21 +88,18 @@ export function createEmptyFront(): ManagementFront {
     relatedDecisions: [],
     relatedTasks: [],
     evidence: [],
+    fcas: [],
     createdAt: now,
     updatedAt: now,
   }
 }
 
 export function loadFronts(): ManagementFront[] {
-  if (typeof window === 'undefined') return initialFronts.map(cloneFront)
+  if (typeof window === 'undefined') return []
   try {
-    const stored = window.localStorage.getItem(FRONTS_STORAGE_KEY)
-    if (!stored) return initialFronts.map(cloneFront)
-    const parsed = JSON.parse(stored) as ManagementFront[]
-    return Array.isArray(parsed) ? parsed.map(cloneFront) : initialFronts.map(cloneFront)
-  } catch {
-    return initialFronts.map(cloneFront)
-  }
+    const value = JSON.parse(localStorage.getItem(FRONTS_STORAGE_KEY) || 'null')
+    return Array.isArray(value) ? value : []
+  } catch { return [] }
 }
 
 export function saveFronts(fronts: ManagementFront[]) {

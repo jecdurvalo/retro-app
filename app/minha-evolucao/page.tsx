@@ -228,7 +228,7 @@ export default function MinhaEvolucaoPage() {
   const currentMonth = new Date().toISOString().slice(0, 7)
   const evidenceThisMonth = evidence.filter(item => item.date.startsWith(currentMonth)).length
   const developedPeople = new Set(evidence.map(item => item.personId).filter(Boolean)).size
-  const activePdis = people.filter(person => person.pdiStatus !== 'Sem PDI').length
+  const activePdis = people.filter(person => person.pdi?.status !== 'Sem PDI').length
 
   function saveNewEvidence(item: EvolutionEvidence) {
     const next = [item, ...evidence]

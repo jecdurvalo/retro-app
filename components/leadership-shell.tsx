@@ -5,26 +5,20 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import {
-  CalendarSync,
-  Compass,
   GitBranch,
-  LayoutDashboard,
+  Home,
   MessageSquareText,
   Plus,
-  Sparkles,
   UserRound,
   UsersRound,
 } from 'lucide-react'
 import CaptureInput from './capture-input'
 
 const navigation = [
-  { label: 'Cockpit', href: '/management', icon: LayoutDashboard },
-  { label: 'Frentes de Gestão', href: '/frentes', icon: GitBranch },
-  { label: 'Retro Qualitativa', href: '/dashboard', icon: MessageSquareText },
-  { label: 'Pessoas', href: '/pessoas', icon: UsersRound },
-  { label: 'Decisões', href: '/decisoes', icon: Compass },
-  { label: 'Rituais', href: '/rituais', icon: CalendarSync },
-  { label: 'Minha Evolução', href: '/minha-evolucao', icon: Sparkles },
+  { label: 'Hoje', href: '/dashboard', icon: Home },
+  { label: 'Frentes', href: '/frentes', icon: GitBranch },
+  { label: 'Time', href: '/pessoas', icon: UsersRound },
+  { label: 'Retro', href: '/retro', icon: MessageSquareText },
 ]
 
 const publicPaths = new Set(['/', '/team'])

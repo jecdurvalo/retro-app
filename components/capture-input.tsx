@@ -228,7 +228,7 @@ export default function CaptureInput() {
     } else if (classification === 'PDI') {
       const names = people.toLocaleLowerCase('pt-BR')
       savePeople(loadPeople().map(person => names.includes(person.name.toLocaleLowerCase('pt-BR'))
-        ? { ...person, evidence: [`Input para PDI: ${textValue}`, ...person.evidence], updatedAt: new Date().toISOString() }
+        ? { ...person, notes: [{ id: `note-${Date.now()}`, text: `Input para PDI: ${textValue}`, createdAt: new Date().toISOString() }, ...person.notes], updatedAt: new Date().toISOString() }
         : person))
     } else if (relatedFrontId && classification !== 'Insight qualitativo') {
       saveFronts(currentFronts.map(front => {
