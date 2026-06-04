@@ -1,9 +1,8 @@
 'use client'
 
-import Link from 'next/link'
 import type { ElementType } from 'react'
 import { useEffect, useMemo, useState } from 'react'
-import { CalendarDays, CheckCircle2, ClipboardCheck, Cloud, CloudRain, Columns3, Frown, GripVertical, HeartPulse, Home, Laugh, ListChecks, Meh, MessageSquareWarning, Pause, Play, QrCode, Send, Smile, Square, Timer, Trash2, Ungroup, UserRound, X } from 'lucide-react'
+import { CalendarDays, CheckCircle2, ClipboardCheck, Cloud, CloudRain, Columns3, Frown, GripVertical, HeartPulse, Laugh, ListChecks, Meh, MessageSquareWarning, Pause, Play, QrCode, Send, Smile, Square, Timer, Trash2, Ungroup, UserRound, X } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import { supabase, SESSION_ID, CATEGORIES, type RetroItem, type Category } from '@/lib/supabase'
 import { TEAM_JOIN_URL } from '@/lib/site-url'
@@ -536,11 +535,10 @@ export default function DashboardPage() {
       <section className="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
         <header className="mb-3 flex items-center justify-between rounded-3xl border border-black/5 bg-white/82 px-4 py-3 shadow-lg shadow-zinc-950/5 backdrop-blur-xl">
           <div className="flex flex-wrap items-center gap-3">
-            <Link href="/" className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-bold text-zinc-700">
-              <Home size={14} />
-              Início
-            </Link>
-            <h1 className="text-lg font-black tracking-normal text-[#1f1f1f] md:text-xl">Retro mensal</h1>
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.16em] text-[var(--retro-wine)]">Fonte qualitativa</p>
+              <h1 className="mt-1 text-lg font-black tracking-normal text-[#1f1f1f] md:text-xl">Retro Qualitativa</h1>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <span className="hidden text-xs font-semibold text-zinc-500 sm:inline">

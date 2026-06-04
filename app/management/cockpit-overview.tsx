@@ -72,18 +72,18 @@ export default function CockpitOverview({ plans }: { plans: ManagementPlan[] }) 
   const actions = useMemo(() => {
     const result: ActionItem[] = []
     hotTopics.forEach(topic => {
-      if (topic.temperature === 'critical') result.push({ id: `hot-${topic.id}`, kind: 'Tema quente', title: topic.title, reason: !topic.nextAction.trim() ? 'Crítico e sem próxima ação' : 'Tema em nível crítico', owner: topic.owner || 'Sem dono', priority: !topic.nextAction.trim() ? 500 : 450, tone: 'bg-rose-100 text-rose-700' })
-      else if (topic.temperature === 'attention' && !topic.nextAction.trim()) result.push({ id: `hot-${topic.id}`, kind: 'Tema quente', title: topic.title, reason: 'Em atenção e sem próxima ação', owner: topic.owner || 'Sem dono', priority: 360, tone: 'bg-amber-100 text-amber-800' })
+      if (topic.temperature === 'critical') result.push({ id: `hot-${topic.id}`, kind: 'Frente sensível', title: topic.title, reason: !topic.nextAction.trim() ? 'Crítica e sem próxima ação' : 'Frente em nível crítico', owner: topic.owner || 'Sem dono', priority: !topic.nextAction.trim() ? 500 : 450, tone: 'bg-rose-100 text-rose-700' })
+      else if (topic.temperature === 'attention' && !topic.nextAction.trim()) result.push({ id: `hot-${topic.id}`, kind: 'Frente sensível', title: topic.title, reason: 'Em atenção e sem próxima ação', owner: topic.owner || 'Sem dono', priority: 360, tone: 'bg-amber-100 text-amber-800' })
     })
     initiatives.forEach(initiative => {
-      if (initiative.status === 'blocked') result.push({ id: `initiative-${initiative.id}`, kind: 'Iniciativa', title: initiative.title, reason: 'Iniciativa bloqueada', owner: initiative.owner || 'Sem dono', priority: 420, tone: 'bg-rose-100 text-rose-700' })
-      else if (initiative.status === 'at_risk' || !initiative.nextStep.trim()) result.push({ id: `initiative-${initiative.id}`, kind: 'Iniciativa', title: initiative.title, reason: !initiative.nextStep.trim() ? 'Sem próximo passo objetivo' : 'Iniciativa em risco', owner: initiative.owner || 'Sem dono', priority: initiative.criticality === 'high' ? 350 : 300, tone: 'bg-amber-100 text-amber-800' })
+      if (initiative.status === 'blocked') result.push({ id: `initiative-${initiative.id}`, kind: 'Frente', title: initiative.title, reason: 'Frente bloqueada', owner: initiative.owner || 'Sem dono', priority: 420, tone: 'bg-rose-100 text-rose-700' })
+      else if (initiative.status === 'at_risk' || !initiative.nextStep.trim()) result.push({ id: `initiative-${initiative.id}`, kind: 'Frente', title: initiative.title, reason: !initiative.nextStep.trim() ? 'Sem próximo passo objetivo' : 'Frente em risco', owner: initiative.owner || 'Sem dono', priority: initiative.criticality === 'high' ? 350 : 300, tone: 'bg-amber-100 text-amber-800' })
     })
     plans.forEach(plan => {
-      if (plan.status === 'blocked' || isOverdue(plan)) result.push({ id: `plan-${plan.id}`, kind: 'Plano / FCA', title: plan.title, reason: plan.status === 'blocked' ? 'Plano bloqueado' : 'Prazo vencido', owner: plan.owner || 'Sem responsável', priority: plan.criticality === 'critical' ? 380 : 280, tone: 'bg-orange-100 text-orange-800' })
+      if (plan.status === 'blocked' || isOverdue(plan)) result.push({ id: `plan-${plan.id}`, kind: 'Frente de ação', title: plan.title, reason: plan.status === 'blocked' ? 'Frente bloqueada' : 'Prazo vencido', owner: plan.owner || 'Sem responsável', priority: plan.criticality === 'critical' ? 380 : 280, tone: 'bg-orange-100 text-orange-800' })
     })
     delegations.forEach(item => {
-      if (!item.responsible.trim() || !item.nextCheckIn || item.nextCheckIn < new Date().toISOString().slice(0, 10)) result.push({ id: `delegation-${item.id}`, kind: 'Delegação', title: item.title, reason: !item.responsible.trim() ? 'Sem DRI definido' : 'Check-in pendente', owner: item.responsible || 'Sem DRI', priority: !item.responsible.trim() ? 310 : 210, tone: 'bg-violet-100 text-violet-700' })
+      if (!item.responsible.trim() || !item.nextCheckIn || item.nextCheckIn < new Date().toISOString().slice(0, 10)) result.push({ id: `delegation-${item.id}`, kind: 'Checkpoint', title: item.title, reason: !item.responsible.trim() ? 'Sem responsável definido' : 'Check-in pendente', owner: item.responsible || 'Sem responsável', priority: !item.responsible.trim() ? 310 : 210, tone: 'bg-violet-100 text-violet-700' })
     })
     return result.sort((a, b) => b.priority - a.priority).slice(0, 5)
   }, [delegations, hotTopics, initiatives, plans])
@@ -91,11 +91,11 @@ export default function CockpitOverview({ plans }: { plans: ManagementPlan[] }) 
   return (
     <>
       <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-        <SummaryCard icon={ListChecks} label="Planos abertos" value={activePlans.length} detail={`${plans.filter(plan => plan.status === 'done').length} concluído(s)`} tone="bg-[rgba(135,0,47,0.08)] text-[var(--retro-wine)]" />
-        <SummaryCard icon={BriefcaseBusiness} label="Iniciativas ativas" value={activeInitiatives.length} detail={`${riskInitiatives.length} em risco ou bloqueada(s)`} tone="bg-cyan-50 text-cyan-700" />
-        <SummaryCard icon={Flame} label="Temas quentes" value={hotAttention.length} detail={`${hotTopics.filter(item => item.temperature === 'critical').length} crítico(s)`} tone="bg-rose-50 text-rose-700" />
+        <SummaryCard icon={ListChecks} label="Frentes de ação" value={activePlans.length} detail={`${plans.filter(plan => plan.status === 'done').length} concluída(s)`} tone="bg-[rgba(135,0,47,0.08)] text-[var(--retro-wine)]" />
+        <SummaryCard icon={BriefcaseBusiness} label="Frentes ativas" value={activeInitiatives.length} detail={`${riskInitiatives.length} em risco ou bloqueada(s)`} tone="bg-cyan-50 text-cyan-700" />
+        <SummaryCard icon={Flame} label="Frentes sensíveis" value={hotAttention.length} detail={`${hotTopics.filter(item => item.temperature === 'critical').length} crítica(s)`} tone="bg-rose-50 text-rose-700" />
         <SummaryCard icon={AlertTriangle} label="Itens em risco" value={riskInitiatives.length + plans.filter(plan => plan.status === 'blocked' || isOverdue(plan)).length + hotTopics.filter(item => item.temperature === 'critical').length} detail="Sinais consolidados" tone="bg-amber-50 text-amber-800" />
-        <SummaryCard icon={UsersRound} label="Delegações em andamento" value={delegations.length} detail={`${lateDelegations.length} check-in(s) pendente(s)`} tone="bg-violet-50 text-violet-700" />
+        <SummaryCard icon={UsersRound} label="Checkpoints de pessoas" value={delegations.length} detail={`${lateDelegations.length} check-in(s) pendente(s)`} tone="bg-violet-50 text-violet-700" />
         <SummaryCard icon={ClipboardCheck} label="Qualidade da gestão" value={`${managementQuality}%`} detail="Clareza e completude" tone="bg-emerald-50 text-emerald-700" />
       </div>
 

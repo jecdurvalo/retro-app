@@ -33,11 +33,11 @@ export default function HomePage() {
               Responder
             </Link>
             <Link
-              href="/dashboard"
+              href="/management"
               className="inline-flex items-center gap-1.5 rounded-2xl bg-[var(--retro-cyan)] px-4 py-2.5 text-sm font-black text-[var(--retro-wine-deep)] shadow-xl shadow-cyan-300/20 transition hover:brightness-110"
             >
               <LayoutDashboard size={16} />
-              Dashboard
+              Cockpit
             </Link>
           </div>
         </nav>
@@ -51,7 +51,7 @@ export default function HomePage() {
               Vamos ver como estamos?
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-white/66">
-              Responda pelo celular e acompanhe os pontos no dashboard em tempo real.
+              Responda pelo celular e acompanhe os sinais qualitativos no cockpit em tempo real.
             </p>
           </div>
 
