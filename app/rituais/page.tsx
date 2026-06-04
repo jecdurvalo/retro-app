@@ -38,7 +38,7 @@ import {
 const cardClass = 'rounded-3xl border border-black/5 bg-white shadow-sm shadow-zinc-950/5'
 const fieldClass =
   'w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-800 outline-none transition placeholder:text-zinc-400 focus:border-[var(--retro-wine)] focus:ring-2 focus:ring-[rgba(135,0,47,0.08)]'
-const outputOptions = ['Task', 'Decisão', 'Checkpoint', 'Atualização de frente'] as const
+const outputOptions = ['Task', 'Decisão', 'Checkpoint', 'Atualização'] as const
 
 const typeTone: Record<RitualType, string> = {
   'Checkpoint de frente': 'bg-blue-50 text-blue-700',
@@ -51,8 +51,8 @@ const typeTone: Record<RitualType, string> = {
 
 const essentialRituals = [
   { type: 'Retro mensal', cadence: 'Mensal', purpose: 'Ler sinais e definir ações.' },
-  { type: '1:1', cadence: 'Quinzenal', purpose: 'Conectar desenvolvimento a evidências.' },
-  { type: 'Checkpoint de frente', cadence: 'Semanal', purpose: 'Desbloquear e confirmar próximos passos.' },
+  { type: '1:1', cadence: 'Quinzenal', purpose: 'Conectar desenvolvimento e evidências.' },
+  { type: 'Checkpoint de frente', cadence: 'Semanal', purpose: 'Desbloquear e confirmar passos.' },
   { type: 'Revisão de decisões', cadence: 'Semanal', purpose: 'Confirmar HQA, donos e checkpoints.' },
   { type: 'Fechamento mensal', cadence: 'Mensal', purpose: 'Consolidar aprendizados e preparar o ciclo.' },
 ] satisfies { type: RitualType; cadence: string; purpose: string }[]
@@ -123,7 +123,7 @@ function RitualModal({
             <h2 id="ritual-modal-title" className="mt-1 text-xl font-black text-zinc-950">
               Novo ritual
             </h2>
-            <p className="mt-1 text-xs text-zinc-400">Defina propósito, recorrência e a saída esperada.</p>
+            <p className="mt-1 text-xs text-zinc-400">Defina propósito, recorrência e o que pode sair.</p>
           </div>
           <button type="button" onClick={onClose} aria-label="Fechar" className="rounded-xl p-2 text-zinc-400 hover:bg-zinc-100">
             <X size={19} />
@@ -176,7 +176,8 @@ function RitualModal({
           </label>
 
           <fieldset>
-            <legend className="text-xs font-bold text-zinc-500">Saídas esperadas</legend>
+            <legend className="text-xs font-bold text-zinc-500">Pode gerar</legend>
+            <p className="mt-1 text-xs text-zinc-400">Marque só o que este ritual pode produzir.</p>
             <div className="mt-2 flex flex-wrap gap-2">
               {outputOptions.map(output => {
                 const selected = draft.outputs.includes(output)
@@ -203,7 +204,7 @@ function RitualModal({
             onClick={() => setShowDetails(value => !value)}
             className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-left text-sm font-bold text-zinc-600"
           >
-            Conectar e preparar
+            Mais detalhes
             <ChevronDown size={16} className={`transition ${showDetails ? 'rotate-180' : ''}`} />
           </button>
 
@@ -434,7 +435,7 @@ export default function RituaisPage() {
                     <div><p className="font-black text-zinc-500">Preparo</p><p className="mt-1 leading-5 text-zinc-600">{ritual.preparation || 'Sem preparo registrado.'}</p></div>
                     {ritual.outputs.length > 0 && (
                       <div className="sm:col-span-2">
-                        <p className="font-black text-zinc-500">Saídas possíveis</p>
+                        <p className="font-black text-zinc-500">Pode gerar</p>
                         <div className="mt-2 flex flex-wrap gap-1.5">{ritual.outputs.map(output => <span key={output} className="rounded-full bg-zinc-100 px-2 py-1 font-bold text-zinc-600">{output}</span>)}</div>
                       </div>
                     )}

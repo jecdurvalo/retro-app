@@ -107,7 +107,7 @@ function OneOnOneModal({
       >
         <div className="flex items-start justify-between gap-4 border-b border-zinc-100 bg-white px-5 py-4 sm:px-6">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.16em] text-[var(--retro-wine)]">Desenvolvimento conectado a evidência</p>
+            <p className="text-xs font-black uppercase tracking-[0.16em] text-[var(--retro-wine)]">Desenvolvimento com evidência</p>
             <h2 id="one-on-one-title" className="mt-1 text-xl font-black text-zinc-950">
               Registrar próximo 1:1
             </h2>
@@ -134,7 +134,7 @@ function OneOnOneModal({
             </select>
           </label>
           <label className="grid gap-1.5 text-xs font-bold text-zinc-500">
-            Data do próximo 1:1
+            Data do 1:1
             <input
               required
               type="date"
@@ -155,7 +155,7 @@ function OneOnOneModal({
             />
           </label>
           <p className="rounded-xl bg-violet-50 px-3 py-2.5 text-xs leading-5 text-violet-700">
-            A pauta será registrada como evidência de desenvolvimento e ficará conectada ao próximo 1:1.
+            O encontro vira evidência e atualiza o próximo 1:1.
           </p>
         </div>
 
@@ -287,7 +287,7 @@ export default function PessoasPage() {
               onClick={() => setOneOnOnePersonId('')}
               className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--retro-wine)] px-5 text-sm font-black text-white shadow-lg shadow-[rgba(135,0,47,0.16)]"
             >
-              <Plus size={17} /> Registrar 1:1
+              <Plus size={17} /> Agendar 1:1
             </button>
           </div>
         </header>
@@ -368,7 +368,8 @@ export default function PessoasPage() {
             <div className="flex items-center justify-between gap-4 px-5 py-5 sm:px-6">
               <div>
                 <h2 className="text-lg font-black text-zinc-950">Visão do time</h2>
-                <p className="mt-1 text-xs text-zinc-400">{filteredPeople.length} pessoas nesta visão · desenvolvimento sustentado por evidências</p>
+                <p className="mt-1 text-xs text-zinc-400">{filteredPeople.length} pessoas nesta visão · desenvolvimento com evidências reais</p>
+                <p className="mt-1 text-xs text-zinc-400">Conecta pessoas, frentes, PDI e 1:1s.</p>
               </div>
               <UserRoundCheck size={20} className="text-[var(--retro-wine)]" />
             </div>
@@ -418,7 +419,7 @@ export default function PessoasPage() {
                         <td className="px-4 py-4">
                           <button type="button" onClick={() => setOneOnOnePersonId(person.id)} className="text-left">
                             <span className="block font-black text-zinc-700">{formatDate(person.nextOneOnOne)}</span>
-                            <span className="mt-1 block text-[11px] font-bold text-[var(--retro-wine)]">Registrar pauta</span>
+                            <span className="mt-1 block text-[11px] font-bold text-[var(--retro-wine)]">Agendar 1:1</span>
                           </button>
                         </td>
                         <td className="py-4 pl-4 pr-6">
@@ -486,7 +487,7 @@ export default function PessoasPage() {
             <Sparkles size={19} className="text-[var(--retro-wine)]" />
             <div>
               <h2 className="text-lg font-black text-zinc-950">Sinais de desenvolvimento</h2>
-              <p className="mt-0.5 text-xs text-zinc-400">Leitura prática baseada no que já aconteceu e no próximo movimento</p>
+              <p className="mt-0.5 text-xs text-zinc-400">Leitura prática do que já aconteceu e do próximo passo.</p>
             </div>
           </div>
           <div className="mt-5 grid gap-4 lg:grid-cols-3">

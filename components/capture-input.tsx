@@ -47,10 +47,7 @@ const classifications = [
   'Insight qualitativo',
 ] as const
 
-const destinations = ['Task', 'Decisão', 'Checkpoint', 'PDI', 'Insight qualitativo'] as const
-
 type Classification = (typeof classifications)[number]
-type Destination = (typeof destinations)[number]
 
 type CapturedInput = {
   id: string
@@ -62,7 +59,6 @@ type CapturedInput = {
   urgency: (typeof urgencies)[number]
   notes: string
   classification: Classification
-  destination: Destination
   relatedDecision: string
   createdAt: string
 }
@@ -82,19 +78,19 @@ function suggestClassification(text: string, origin: string, relatedFrontId: str
   return 'Insight qualitativo'
 }
 
-function destinationFor(classification: Classification): Destination {
-  if (classification === 'Decisão') return 'Decisão'
-  if (classification === 'PDI') return 'PDI'
-  if (classification === 'Task') return 'Task'
-  return 'Insight qualitativo'
+function classificationSummary(classification: Classification, relatedFrontName: string) {
+  if (classification === 'Frente nova') return 'Cria uma frente nova.'
+  if (classification === 'Atualização de frente existente') return relatedFrontName ? `Atualiza ${relatedFrontName}.` : 'Atualiza a frente selecionada.'
+  if (classification === 'Task') return relatedFrontName ? `Cria uma task em ${relatedFrontName}.` : 'Cria uma task na frente selecionada.'
+  if (classification === 'Decisão') return 'Cria uma decisão vinculável a uma frente.'
+  if (classification === 'PDI') return 'Registra evidência de desenvolvimento.'
+  if (classification === 'Monitoramento') return relatedFrontName ? `Registra monitoramento em ${relatedFrontName}.` : 'Registra monitoramento na frente selecionada.'
+  if (classification === 'FCA') return relatedFrontName ? `Registra FCA em ${relatedFrontName}.` : 'Registra FCA na frente selecionada.'
+  return 'Salva só como insight.'
 }
 
-function classificationForDestination(destination: Destination, hasFront: boolean): Classification {
-  if (destination === 'Task') return 'Task'
-  if (destination === 'Decisão') return 'Decisão'
-  if (destination === 'PDI') return 'PDI'
-  if (destination === 'Checkpoint') return hasFront ? 'Atualização de frente existente' : 'Insight qualitativo'
-  return 'Insight qualitativo'
+function needsFront(classification: Classification) {
+  return classification === 'Atualização de frente existente' || classification === 'Task' || classification === 'Monitoramento' || classification === 'FCA'
 }
 
 function frontOriginFor(origin: (typeof origins)[number]): FrontOrigin {
@@ -123,7 +119,6 @@ export default function CaptureInput() {
   const [urgency, setUrgency] = useState<(typeof urgencies)[number]>('Média')
   const [notes, setNotes] = useState('')
   const [classification, setClassification] = useState<Classification>('Insight qualitativo')
-  const [destination, setDestination] = useState<Destination>('Insight qualitativo')
   const [relatedDecision, setRelatedDecision] = useState('')
 
   const relatedFront = useMemo(
@@ -140,7 +135,6 @@ export default function CaptureInput() {
     setUrgency('Média')
     setNotes('')
     setClassification('Insight qualitativo')
-    setDestination('Insight qualitativo')
     setRelatedDecision('')
   }, [])
 
@@ -180,7 +174,6 @@ export default function CaptureInput() {
     event.preventDefault()
     const suggestion = suggestClassification(text, origin, relatedFrontId)
     setClassification(suggestion)
-    setDestination(destinationFor(suggestion))
     setStep('classify')
   }
 
@@ -198,7 +191,6 @@ export default function CaptureInput() {
       urgency,
       notes: notesValue,
       classification,
-      destination,
       relatedDecision: relatedDecision.trim(),
       createdAt: new Date().toISOString(),
     }
@@ -221,7 +213,7 @@ export default function CaptureInput() {
         },
         ...currentFronts,
       ])
-    } else if (destination === 'Decisão') {
+    } else if (classification === 'Decisão') {
       const decision = createEmptyDecision()
       saveDecisions([
         {
@@ -233,12 +225,12 @@ export default function CaptureInput() {
         },
         ...loadDecisions(),
       ])
-    } else if (destination === 'PDI') {
+    } else if (classification === 'PDI') {
       const names = people.toLocaleLowerCase('pt-BR')
       savePeople(loadPeople().map(person => names.includes(person.name.toLocaleLowerCase('pt-BR'))
         ? { ...person, evidence: [`Input para PDI: ${textValue}`, ...person.evidence], updatedAt: new Date().toISOString() }
         : person))
-    } else if (relatedFrontId && destination !== 'Insight qualitativo') {
+    } else if (relatedFrontId && classification !== 'Insight qualitativo') {
       saveFronts(currentFronts.map(front => {
         if (front.id !== relatedFrontId) return front
 
@@ -246,9 +238,10 @@ export default function CaptureInput() {
         return {
           ...front,
           involvedPeople: [...new Set([...front.involvedPeople, ...peopleToAdd])],
-          relatedTasks: destination === 'Task' || destination === 'Checkpoint' || destination === 'PDI'
-            ? [...front.relatedTasks, `${destination}: ${textValue}`]
+          relatedTasks: classification === 'Task' || classification === 'Atualização de frente existente' || classification === 'Monitoramento' || classification === 'FCA'
+            ? [...front.relatedTasks, `${classification}: ${textValue}`]
             : front.relatedTasks,
+          evidence: classification === 'Monitoramento' || classification === 'FCA' ? [`${classification}: ${textValue}`, ...front.evidence] : front.evidence,
           updatedAt: new Date().toISOString(),
         }
       }))
@@ -284,8 +277,8 @@ export default function CaptureInput() {
             </h2>
             <p className="mt-1 text-sm font-medium text-zinc-500">
               {step === 'capture'
-                ? 'Registre o contexto agora e organize depois.'
-                : 'A sugestão é editável e só será aplicada após sua validação.'}
+                ? 'Capture rápido. Classifique depois.'
+                : 'A sugestão é editável antes de salvar.'}
             </p>
           </div>
           <button
@@ -374,56 +367,27 @@ export default function CaptureInput() {
                 </div>
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="rounded-2xl border border-zinc-200 bg-white p-4">
                 <SelectField
-                  label="Classificação sugerida"
+                  label="Classificação"
                   value={classification}
                   options={classifications}
-                  onChange={value => {
-                    const next = value as Classification
-                    setClassification(next)
-                    setDestination(destinationFor(next))
-                  }}
+                  onChange={value => setClassification(value as Classification)}
                 />
-
-                <div className="rounded-2xl border border-zinc-200 bg-white p-4">
-                  <p className="text-xs font-black uppercase tracking-[0.12em] text-zinc-500">Salvar como</p>
-                  <p className="mt-1 text-xs text-zinc-400">A IA sugere. Você valida a saída final.</p>
-                  <div className="mt-3 grid grid-cols-2 gap-2">
-                    {destinations.map(option => (
-                      <button
-                        key={option}
-                        type="button"
-                        disabled={(option === 'Task' || option === 'Checkpoint') && !relatedFrontId}
-                        onClick={() => {
-                          setDestination(option)
-                          setClassification(classificationForDestination(option, Boolean(relatedFrontId)))
-                        }}
-                        className={`flex items-center justify-center gap-2 rounded-xl border px-3 py-3 text-xs font-black transition ${
-                          destination === option
-                            ? 'border-[var(--retro-wine)] bg-[rgba(135,0,47,0.08)] text-[var(--retro-wine)]'
-                            : 'border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-35'
-                        }`}
-                      >
-                        {destination === option && <Check size={14} />}
-                        {option === 'Insight qualitativo' ? 'Salvar como insight' : option}
-                      </button>
-                    ))}
-                  </div>
-                  <p className="mt-3 text-xs font-semibold text-zinc-400">
-                    Vai sair como <strong className="text-zinc-700">{classification}</strong>
-                    {relatedFront ? ` em ${relatedFront.name}` : ''}.
-                  </p>
-                  {!relatedFrontId && <p className="mt-1 text-xs text-amber-700">Task e checkpoint exigem uma frente relacionada.</p>}
-                </div>
+                <p className="mt-3 text-xs text-zinc-400">
+                  {classificationSummary(classification, relatedFront?.name || '')}
+                </p>
+                {needsFront(classification) && !relatedFrontId && (
+                  <p className="mt-2 text-xs font-semibold text-amber-700">Escolha uma frente para essa classificação.</p>
+                )}
               </div>
 
               <div className="rounded-2xl border border-zinc-200 bg-white p-4">
                 <p className="flex items-center gap-2 text-sm font-black text-zinc-800">
                   <Link2 size={16} className="text-[var(--retro-wine)]" />
-                  Conexões opcionais
+                  Conexões
                 </p>
-                <p className="mt-1 text-xs font-semibold text-zinc-400">Preencha só o que ajudar a preservar contexto.</p>
+                <p className="mt-1 text-xs font-semibold text-zinc-400">Conecte sem criar ruído.</p>
                 <div className="mt-4 grid gap-4">
                   <label className="block text-xs font-black uppercase tracking-wider text-zinc-500">
                     Pessoa
@@ -440,7 +404,7 @@ export default function CaptureInput() {
                     </span>
                   </label>
                   <label className="block text-xs font-black uppercase tracking-wider text-zinc-500">
-                    Decisão
+                    Decisão relacionada
                     <input value={relatedDecision} onChange={event => setRelatedDecision(event.target.value)} placeholder="Decisão relacionada" className={fieldClass} />
                   </label>
                 </div>
@@ -457,7 +421,8 @@ export default function CaptureInput() {
               </button>
               <button
                 type="submit"
-                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[var(--retro-wine)] px-5 py-3.5 text-sm font-black text-white shadow-lg shadow-[rgba(135,0,47,0.18)] transition hover:bg-[var(--retro-wine-deep)]"
+                disabled={needsFront(classification) && !relatedFrontId}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[var(--retro-wine)] px-5 py-3.5 text-sm font-black text-white shadow-lg shadow-[rgba(135,0,47,0.18)] transition hover:bg-[var(--retro-wine-deep)] disabled:cursor-not-allowed disabled:bg-zinc-300 disabled:shadow-none"
               >
                 <Save size={17} />
                 Salvar input
