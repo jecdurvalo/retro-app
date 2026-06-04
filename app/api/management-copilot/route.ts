@@ -1,34 +1,8 @@
-const responseSchema = {
-  name: 'management_copilot_response',
-  strict: true,
-  schema: {
-    type: 'object',
-    additionalProperties: false,
-    required: ['diagnosis', 'evidence', 'recommendation', 'nextStep', 'suggestedOwner', 'dataGaps'],
-    properties: {
-      diagnosis: { type: 'string' },
-      evidence: {
-        type: 'array',
-        items: {
-          type: 'object',
-          additionalProperties: false,
-          required: ['source', 'fact'],
-          properties: { source: { type: 'string' }, fact: { type: 'string' } },
-        },
-      },
-      recommendation: { type: 'string' },
-      nextStep: { type: 'string' },
-      suggestedOwner: { type: 'string' },
-      dataGaps: { type: 'array', items: { type: 'string' } },
-    },
-  },
-}
-
 export async function POST(request: Request) {
-  const apiKey = process.env.OPENROUTER_API_KEY
-  const model = process.env.OPENROUTER_MODEL
-  if (!apiKey || !model) {
-    return Response.json({ error: 'Configure OPENROUTER_API_KEY e OPENROUTER_MODEL no ambiente do servidor.' }, { status: 503 })
+  const apiKey = process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY
+  const model = process.env.OPENROUTER_MODEL || 'openai/gpt-oss-120b:free'
+  if (!apiKey) {
+    return Response.json({ error: 'Configure OPENROUTER_API_KEY ou VITE_OPENROUTER_API_KEY no ambiente do servidor.' }, { status: 503 })
   }
 
   const body = await request.json() as { question?: unknown; context?: unknown }
@@ -54,10 +28,7 @@ export async function POST(request: Request) {
       },
       body: JSON.stringify({
         model,
-        temperature: 0.2,
         max_tokens: 1200,
-        provider: { require_parameters: true, data_collection: 'deny', zdr: true },
-        response_format: { type: 'json_schema', json_schema: responseSchema },
         messages: [
           {
             role: 'system',
@@ -69,7 +40,8 @@ export async function POST(request: Request) {
               'Quando faltar informação, liste os campos necessários em dataGaps.',
               'Evite respostas genéricas. Conecte a resposta a uma ação de gestão.',
               'nextStep deve conter ação verificável, dono e prazo sugerido.',
-              'Responda em português brasileiro no schema solicitado.',
+              'Responda em português brasileiro.',
+              'Retorne somente JSON válido, sem markdown, usando exatamente: {"diagnosis":"...","evidence":[{"source":"...","fact":"..."}],"recommendation":"...","nextStep":"...","suggestedOwner":"...","dataGaps":["..."]}.',
             ].join(' '),
           },
           { role: 'user', content: `Pergunta: ${body.question}\n\nContexto gerencial:\n${serializedContext}` },
@@ -80,7 +52,8 @@ export async function POST(request: Request) {
     if (!response.ok) return Response.json({ error: data.error?.message || 'Falha ao consultar o copiloto.' }, { status: response.status })
     const content = data.choices?.[0]?.message?.content
     if (!content) return Response.json({ error: 'O copiloto não retornou conteúdo.' }, { status: 502 })
-    return Response.json(JSON.parse(content))
+    const normalized = content.trim().replace(/^```json\s*/i, '').replace(/\s*```$/, '')
+    return Response.json(JSON.parse(normalized))
   } catch (error) {
     const message = error instanceof Error && error.name === 'AbortError' ? 'A consulta excedeu o tempo limite.' : 'Não foi possível processar a resposta do copiloto.'
     return Response.json({ error: message }, { status: 502 })
