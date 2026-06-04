@@ -36,6 +36,7 @@ import {
 import { SESSION_ID, supabase, type Category, type RetroItem } from '@/lib/supabase'
 import CockpitOverview from './cockpit-overview'
 import DelegationBoard from './delegation-board'
+import ExecutiveReading from './executive-reading'
 import HotTopicRadar from './hot-topic-radar'
 import InitiativePortfolio from './initiative-portfolio'
 import ManagementQuality from './management-quality'
@@ -294,6 +295,8 @@ export default function ManagementPage() {
         </header>
 
         <CockpitOverview plans={plans} />
+
+        <ExecutiveReading plans={plans} snapshots={snapshots} currentMood={currentMood || null} />
 
         <ManagementQuality plans={plans} />
 
