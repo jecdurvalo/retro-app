@@ -40,6 +40,7 @@ import ExecutiveReading from './executive-reading'
 import HotTopicRadar from './hot-topic-radar'
 import InitiativePortfolio from './initiative-portfolio'
 import ManagementQuality from './management-quality'
+import ManagementCopilot from './management-copilot'
 import MonthlyClose from './monthly-close'
 
 const PLAN_STORAGE_KEY = `retro-action-plans:${SESSION_ID}`
@@ -298,6 +299,8 @@ export default function ManagementPage() {
         <CockpitOverview plans={plans} />
 
         <ExecutiveReading plans={plans} snapshots={snapshots} currentMood={currentMood || null} />
+
+        <ManagementCopilot plans={plans} snapshots={snapshots} currentMood={currentMood || null} />
 
         <ManagementQuality plans={plans} />
 
