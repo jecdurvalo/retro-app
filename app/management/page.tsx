@@ -1,26 +1,20 @@
 'use client'
 
 import Link from 'next/link'
-import type { ElementType } from 'react'
 import { useEffect, useMemo, useState } from 'react'
 import {
-  AlertTriangle,
   ArrowDownRight,
   ArrowUpRight,
   BarChart3,
   CalendarCheck,
   CheckCircle2,
   ChevronDown,
-  ClipboardCheck,
   Clock3,
   Home,
   Import,
-  Lightbulb,
-  ListChecks,
   Plus,
   Save,
   ShieldCheck,
-  Sparkles,
   Target,
   Trash2,
   UserRound,
@@ -40,6 +34,7 @@ import {
   type RetroSnapshot,
 } from '@/lib/management'
 import { SESSION_ID, supabase, type Category, type RetroItem } from '@/lib/supabase'
+import CockpitOverview from './cockpit-overview'
 import DelegationBoard from './delegation-board'
 import HotTopicRadar from './hot-topic-radar'
 import InitiativePortfolio from './initiative-portfolio'
@@ -132,31 +127,6 @@ function formatDate(value: string) {
   return new Date(`${value}T12:00:00`).toLocaleDateString('pt-BR')
 }
 
-function MetricCard({
-  icon: Icon,
-  label,
-  value,
-  detail,
-  tone,
-}: {
-  icon: ElementType
-  label: string
-  value: string | number
-  detail: string
-  tone: string
-}) {
-  return (
-    <article className="rounded-3xl border border-black/5 bg-white/88 p-5 shadow-lg shadow-zinc-950/5 backdrop-blur-xl">
-      <div className={`grid h-10 w-10 place-items-center rounded-2xl ${tone}`}>
-        <Icon size={19} />
-      </div>
-      <p className="mt-5 text-3xl font-black text-[var(--retro-ink)]">{value}</p>
-      <p className="mt-1 text-sm font-black text-zinc-800">{label}</p>
-      <p className="mt-1 text-xs font-semibold text-zinc-400">{detail}</p>
-    </article>
-  )
-}
-
 export default function ManagementPage() {
   const [plans, setPlans] = useState<ManagementPlan[]>(loadManagementPlans)
   const [snapshots, setSnapshots] = useState<RetroSnapshot[]>(loadRetroSnapshots)
@@ -196,56 +166,6 @@ export default function ManagementPage() {
     ? currentMood - previousSnapshot.moodAverage
     : 0
   const openPlans = plans.filter(plan => plan.status !== 'done')
-  const overduePlans = plans.filter(plan => isOverdue(plan))
-  const lateCheckIns = plans.filter(plan => isCheckInLate(plan))
-  const completeFcas = plans.filter(plan => getFcaCompleteness(plan) === 100)
-  const averageCompleteness = plans.length
-    ? Math.round(plans.reduce((sum, plan) => sum + getFcaCompleteness(plan), 0) / plans.length)
-    : 0
-
-  const insights = useMemo(() => {
-    const result: { title: string; detail: string; level: 'risk' | 'attention' | 'good' }[] = []
-    const criticalOpen = plans.filter(plan => plan.status !== 'done' && plan.criticality === 'critical')
-    const noCause = plans.filter(plan => plan.status !== 'done' && !plan.cause.trim())
-
-    if (overduePlans.length > 0) {
-      result.push({
-        title: `${overduePlans.length} plano${overduePlans.length !== 1 ? 's' : ''} fora do prazo`,
-        detail: 'Replaneje a data ou registre o impedimento antes do próximo check-in.',
-        level: 'risk',
-      })
-    }
-    if (criticalOpen.length > 0) {
-      result.push({
-        title: `${criticalOpen.length} item${criticalOpen.length !== 1 ? 's' : ''} crítico${criticalOpen.length !== 1 ? 's' : ''} aberto${criticalOpen.length !== 1 ? 's' : ''}`,
-        detail: 'Itens críticos devem ter responsável, métrica de sucesso e check-in curto.',
-        level: 'risk',
-      })
-    }
-    if (noCause.length > 0) {
-      result.push({
-        title: `${noCause.length} FCA${noCause.length !== 1 ? 's' : ''} sem causa registrada`,
-        detail: 'Sem causa, a ação corre o risco de tratar apenas o sintoma.',
-        level: 'attention',
-      })
-    }
-    if (plans.length > 0 && completeFcas.length === plans.length) {
-      result.push({
-        title: 'Carteira com FCAs completos',
-        detail: 'O próximo foco é evidenciar resultado e encerrar ações concluídas.',
-        level: 'good',
-      })
-    }
-    if (result.length === 0) {
-      result.push({
-        title: 'Comece importando os planos da retro',
-        detail: 'Depois complete fato, causa, criticidade e critério de sucesso.',
-        level: 'attention',
-      })
-    }
-
-    return result.slice(0, 4)
-  }, [completeFcas.length, overduePlans, plans])
 
   function updatePlan(id: string, updates: Partial<ManagementPlan>) {
     setPlans(current => current.map(plan => (
@@ -354,9 +274,10 @@ export default function ManagementPage() {
             <div>
               <p className="flex items-center gap-1.5 text-xs font-black uppercase tracking-[0.18em] text-[var(--retro-wine)]">
                 <ShieldCheck size={14} />
-                Área gerencial
+                Liderança
               </p>
-              <h1 className="mt-1 text-2xl font-black">Cockpit de melhoria contínua</h1>
+              <h1 className="mt-1 text-2xl font-black">Cockpit de Gestão</h1>
+              <p className="mt-1 text-xs font-semibold text-zinc-400">Retros, planos, iniciativas e temas críticos em uma visão única.</p>
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -371,62 +292,18 @@ export default function ManagementPage() {
           </div>
         </header>
 
-        <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <MetricCard icon={ListChecks} label="Planos abertos" value={openPlans.length} detail={`${plans.filter(plan => plan.status === 'done').length} concluído(s)`} tone="bg-[rgba(135,0,47,0.1)] text-[var(--retro-wine)]" />
-          <MetricCard icon={AlertTriangle} label="Exigem atenção" value={overduePlans.length + lateCheckIns.length} detail={`${overduePlans.length} atrasado(s) · ${lateCheckIns.length} check-in(s)`} tone="bg-rose-100 text-rose-700" />
-          <MetricCard icon={ClipboardCheck} label="Qualidade dos FCAs" value={`${averageCompleteness}%`} detail={`${completeFcas.length} completo(s) de ${plans.length}`} tone="bg-amber-100 text-amber-800" />
-          <MetricCard icon={BarChart3} label="Mood atual" value={currentMood ? currentMood.toFixed(1) : '—'} detail={moodEntries.length ? `${moodEntries.length} resposta(s)` : 'Sem respostas nesta sessão'} tone="bg-cyan-100 text-cyan-800" />
-        </div>
+        <CockpitOverview plans={plans} />
 
         <HotTopicRadar />
 
-        <div className="mt-4 grid gap-4 xl:grid-cols-[1.5fr_1fr]">
-          <section className="rounded-[2rem] border border-black/5 bg-white/88 p-5 shadow-xl shadow-zinc-950/5 backdrop-blur-xl">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-[var(--retro-wine)]">
-                  <Sparkles size={14} />
-                  Leitura gerencial
-                </p>
-                <h2 className="mt-2 text-2xl font-black">Onde cobrar atenção agora</h2>
-              </div>
-              <span className="rounded-xl bg-zinc-100 px-3 py-1.5 text-xs font-black text-zinc-500">Regras automáticas</span>
-            </div>
-            <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              {insights.map(insight => (
-                <article key={insight.title} className={`rounded-2xl border p-4 ${insight.level === 'risk' ? 'border-rose-200 bg-rose-50' : insight.level === 'good' ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50'}`}>
-                  <p className="font-black text-zinc-900">{insight.title}</p>
-                  <p className="mt-2 text-sm font-semibold leading-6 text-zinc-500">{insight.detail}</p>
-                </article>
-              ))}
-            </div>
-          </section>
-
-          <section className="rounded-[2rem] border border-black/5 bg-[var(--retro-wine)] p-5 text-white shadow-xl shadow-[rgba(135,0,47,0.2)]">
-            <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-white/55">
-              <Lightbulb size={14} />
-              Próxima camada de IA
-            </p>
-            <h2 className="mt-3 text-2xl font-black">IA como copiloto, não como dona do plano</h2>
-            <ul className="mt-5 space-y-3 text-sm font-semibold leading-6 text-white/70">
-              <li>• Sugerir clusters semânticos entre retros.</li>
-              <li>• Questionar causas fracas ou ações genéricas.</li>
-              <li>• Resumir recorrências e sinais do mood.</li>
-              <li>• Preparar pauta de cobrança por criticidade.</li>
-            </ul>
-          </section>
-        </div>
-
         <InitiativePortfolio />
-
-        <DelegationBoard />
 
         <section className="mt-4 rounded-[2rem] border border-black/5 bg-white/88 p-5 shadow-xl shadow-zinc-950/5 backdrop-blur-xl">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-[var(--retro-wine)]">
                 <Target size={14} />
-                Carteira de FCAs
+                Planos de ação e FCAs
               </p>
               <h2 className="mt-2 text-2xl font-black">Do fato até a evidência de resultado</h2>
             </div>
@@ -549,15 +426,17 @@ export default function ManagementPage() {
           )}
         </section>
 
+        <DelegationBoard />
+
         <section className="mt-4 rounded-[2rem] border border-black/5 bg-white/88 p-5 shadow-xl shadow-zinc-950/5 backdrop-blur-xl">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-[var(--retro-wine)]">
                 <BarChart3 size={14} />
-                Histórico de retros
+                Histórico mensal
               </p>
-              <h2 className="mt-2 text-2xl font-black">Comparação de mood e temas</h2>
-              <p className="mt-1 text-sm font-semibold text-zinc-400">Salve um snapshot ao encerrar cada retro para construir a série histórica.</p>
+              <h2 className="mt-2 text-2xl font-black">Mood, aprendizados e evolução</h2>
+              <p className="mt-1 text-sm font-semibold text-zinc-400">Snapshots mensais para acompanhar sinais, temas e evolução da gestão.</p>
             </div>
             <div className="flex flex-wrap gap-2">
               <input type="date" value={snapshotDate} onChange={event => setSnapshotDate(event.target.value)} className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold outline-none focus:border-[var(--retro-wine)]" />

@@ -127,7 +127,7 @@ export default function DelegationBoard() {
     <section className="mt-4 rounded-[2rem] border border-black/5 bg-white/88 p-5 shadow-xl shadow-zinc-950/5 backdrop-blur-xl">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-[var(--retro-wine)]"><UsersRound size={14} /> Delegation Board</p>
+          <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-[var(--retro-wine)]"><UsersRound size={14} /> Delegação e autonomia</p>
           <h2 className="mt-2 text-2xl font-black">Responsabilidade clara, autonomia em evolução</h2>
           <p className="mt-1 text-sm font-semibold text-zinc-400">Visão de distribuição, dependências e desenvolvimento do time.</p>
         </div>
