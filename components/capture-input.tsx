@@ -18,6 +18,8 @@ import {
   type FrontOrigin,
   type ManagementFront,
 } from '@/lib/fronts'
+import { createEmptyDecision, loadDecisions, saveDecisions } from '@/lib/decisions'
+import { loadPeople, savePeople } from '@/lib/people'
 
 const INPUTS_STORAGE_KEY = 'leadership-captured-inputs'
 
@@ -84,6 +86,14 @@ function destinationFor(classification: Classification): Destination {
   if (classification === 'Decisão') return 'Decisão'
   if (classification === 'PDI') return 'PDI'
   if (classification === 'Task') return 'Task'
+  return 'Insight qualitativo'
+}
+
+function classificationForDestination(destination: Destination, hasFront: boolean): Classification {
+  if (destination === 'Task') return 'Task'
+  if (destination === 'Decisão') return 'Decisão'
+  if (destination === 'PDI') return 'PDI'
+  if (destination === 'Checkpoint') return hasFront ? 'Atualização de frente existente' : 'Insight qualitativo'
   return 'Insight qualitativo'
 }
 
@@ -176,15 +186,17 @@ export default function CaptureInput() {
 
   function saveInput(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    const textValue = text.trim()
+    const notesValue = notes.trim()
     const record: CapturedInput = {
       id: typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : `input-${Date.now()}`,
-      text: text.trim(),
+      text: textValue,
       origin,
       people: people.trim(),
       relatedFrontId,
       relatedFrontName: relatedFront?.name || '',
       urgency,
-      notes: notes.trim(),
+      notes: notesValue,
       classification,
       destination,
       relatedDecision: relatedDecision.trim(),
@@ -199,16 +211,33 @@ export default function CaptureInput() {
       saveFronts([
         {
           ...newFront,
-          name: text.trim().slice(0, 80),
-          description: text.trim(),
+          name: textValue.slice(0, 80),
+          description: textValue,
           origin: frontOriginFor(origin),
           involvedPeople: people ? people.split(',').map(item => item.trim()).filter(Boolean) : [],
           temperature: urgency === 'Crítica' ? 'Crítica' : urgency === 'Alta' ? 'Atenção' : 'Saudável',
           managerIntervention: urgency === 'Crítica' ? 'Desbloquear' : 'Monitorar',
-          nextStep: notes.trim(),
+          nextStep: notesValue || 'Definir próximo passo',
         },
         ...currentFronts,
       ])
+    } else if (destination === 'Decisão') {
+      const decision = createEmptyDecision()
+      saveDecisions([
+        {
+          ...decision,
+          title: textValue.slice(0, 100),
+          context: notesValue || textValue,
+          owner: people.split(',')[0]?.trim() || 'Joana',
+          frontIds: relatedFrontId ? [relatedFrontId] : [],
+        },
+        ...loadDecisions(),
+      ])
+    } else if (destination === 'PDI') {
+      const names = people.toLocaleLowerCase('pt-BR')
+      savePeople(loadPeople().map(person => names.includes(person.name.toLocaleLowerCase('pt-BR'))
+        ? { ...person, evidence: [`Input para PDI: ${textValue}`, ...person.evidence], updatedAt: new Date().toISOString() }
+        : person))
     } else if (relatedFrontId && destination !== 'Insight qualitativo') {
       saveFronts(currentFronts.map(front => {
         if (front.id !== relatedFrontId) return front
@@ -218,11 +247,8 @@ export default function CaptureInput() {
           ...front,
           involvedPeople: [...new Set([...front.involvedPeople, ...peopleToAdd])],
           relatedTasks: destination === 'Task' || destination === 'Checkpoint' || destination === 'PDI'
-            ? [...front.relatedTasks, `${destination}: ${text.trim()}`]
+            ? [...front.relatedTasks, `${destination}: ${textValue}`]
             : front.relatedTasks,
-          relatedDecisions: destination === 'Decisão'
-            ? [...front.relatedDecisions, text.trim()]
-            : front.relatedDecisions,
           updatedAt: new Date().toISOString(),
         }
       }))
@@ -254,7 +280,7 @@ export default function CaptureInput() {
               Entrada rápida
             </p>
             <h2 id="capture-input-title" className="mt-2 text-2xl font-black tracking-tight text-zinc-900">
-              {step === 'capture' ? 'Capturar input' : 'Validar classificação'}
+              {step === 'capture' ? 'Capturar input' : 'Validar e salvar'}
             </h2>
             <p className="mt-1 text-sm font-medium text-zinc-500">
               {step === 'capture'
@@ -348,44 +374,56 @@ export default function CaptureInput() {
                 </div>
               </div>
 
-              <SelectField
-                label="Sugestão de classificação"
-                value={classification}
-                options={classifications}
-                onChange={value => {
-                  const next = value as Classification
-                  setClassification(next)
-                  setDestination(destinationFor(next))
-                }}
-              />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <SelectField
+                  label="Classificação sugerida"
+                  value={classification}
+                  options={classifications}
+                  onChange={value => {
+                    const next = value as Classification
+                    setClassification(next)
+                    setDestination(destinationFor(next))
+                  }}
+                />
 
-              <div>
-                <p className="text-sm font-black text-zinc-700">Transformar em ou salvar como</p>
-                <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
-                  {destinations.map(option => (
-                    <button
-                      key={option}
-                      type="button"
-                      onClick={() => setDestination(option)}
-                      className={`flex items-center justify-center gap-2 rounded-xl border px-3 py-3 text-xs font-black transition ${
-                        destination === option
-                          ? 'border-[var(--retro-wine)] bg-[rgba(135,0,47,0.08)] text-[var(--retro-wine)]'
-                          : 'border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50'
-                      }`}
-                    >
-                      {destination === option && <Check size={14} />}
-                      {option === 'Insight qualitativo' ? 'Salvar como insight' : option}
-                    </button>
-                  ))}
+                <div className="rounded-2xl border border-zinc-200 bg-white p-4">
+                  <p className="text-xs font-black uppercase tracking-[0.12em] text-zinc-500">Salvar como</p>
+                  <p className="mt-1 text-xs text-zinc-400">A IA sugere. Você valida a saída final.</p>
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    {destinations.map(option => (
+                      <button
+                        key={option}
+                        type="button"
+                        disabled={(option === 'Task' || option === 'Checkpoint') && !relatedFrontId}
+                        onClick={() => {
+                          setDestination(option)
+                          setClassification(classificationForDestination(option, Boolean(relatedFrontId)))
+                        }}
+                        className={`flex items-center justify-center gap-2 rounded-xl border px-3 py-3 text-xs font-black transition ${
+                          destination === option
+                            ? 'border-[var(--retro-wine)] bg-[rgba(135,0,47,0.08)] text-[var(--retro-wine)]'
+                            : 'border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-35'
+                        }`}
+                      >
+                        {destination === option && <Check size={14} />}
+                        {option === 'Insight qualitativo' ? 'Salvar como insight' : option}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="mt-3 text-xs font-semibold text-zinc-400">
+                    Vai sair como <strong className="text-zinc-700">{classification}</strong>
+                    {relatedFront ? ` em ${relatedFront.name}` : ''}.
+                  </p>
+                  {!relatedFrontId && <p className="mt-1 text-xs text-amber-700">Task e checkpoint exigem uma frente relacionada.</p>}
                 </div>
               </div>
 
               <div className="rounded-2xl border border-zinc-200 bg-white p-4">
                 <p className="flex items-center gap-2 text-sm font-black text-zinc-800">
                   <Link2 size={16} className="text-[var(--retro-wine)]" />
-                  Conexões
+                  Conexões opcionais
                 </p>
-                <p className="mt-1 text-xs font-semibold text-zinc-400">Conecte o registro ao contexto que não pode se perder.</p>
+                <p className="mt-1 text-xs font-semibold text-zinc-400">Preencha só o que ajudar a preservar contexto.</p>
                 <div className="mt-4 grid gap-4">
                   <label className="block text-xs font-black uppercase tracking-wider text-zinc-500">
                     Pessoa

@@ -26,49 +26,9 @@ import {
   type FrontTemperature,
   type ManagementFront,
 } from '@/lib/fronts'
-
-const agenda = [
-  {
-    title: 'Checkpoint com stakeholder',
-    detail: 'Alinhar definições dos indicadores executivos',
-    time: 'Hoje · 10:00',
-    href: '/rituais',
-    icon: UsersRound,
-    tone: 'bg-sky-50 text-sky-600',
-  },
-  {
-    title: 'Decisão a tomar',
-    detail: 'Definir reforço temporário para suporte',
-    time: 'Hoje · 14:00',
-    href: '/decisoes',
-    icon: Target,
-    tone: 'bg-amber-50 text-amber-600',
-  },
-  {
-    title: 'Frente sem atualização',
-    detail: 'Confiabilidade dos indicadores executivos',
-    time: 'Amanhã · 09:00',
-    href: '/frentes',
-    icon: CircleAlert,
-    tone: 'bg-rose-50 text-rose-600',
-  },
-  {
-    title: '1:1 de desenvolvimento',
-    detail: 'Evolução de autonomia da liderança',
-    time: 'Qui · 11:00',
-    href: '/pessoas',
-    icon: UserRound,
-    tone: 'bg-violet-50 text-violet-600',
-  },
-  {
-    title: 'Tema da retro para tratar',
-    detail: 'Capacidade e foco do time',
-    time: 'Sex · 10:30',
-    href: '/dashboard',
-    icon: MessageCircleMore,
-    tone: 'bg-emerald-50 text-emerald-600',
-  },
-]
+import { loadDecisions, type LeadershipDecision } from '@/lib/decisions'
+import { loadPeople, type LeadershipPerson } from '@/lib/people'
+import { loadRituals, type LeadershipRitual } from '@/lib/rituals'
 
 const temperatureTone: Record<FrontTemperature, string> = {
   Saudável: 'bg-emerald-50 text-emerald-700',
@@ -86,12 +46,19 @@ const interventionTone: Record<string, string> = {
 }
 
 const moodTopics = ['Capacidade', 'Foco e prioridades', 'Processos', 'Comunicação']
+const TODAY_TIME = Date.now()
 
 function formatCheckpoint(value: string) {
   if (!value) return 'A definir'
   return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' }).format(
     new Date(`${value}T12:00:00`),
   )
+}
+
+function withinNextWeek(value: string) {
+  if (!value) return false
+  const time = new Date(`${value}T23:59:59`).getTime()
+  return time >= TODAY_TIME && time <= TODAY_TIME + 7 * 86_400_000
 }
 
 function priorityScore(front: ManagementFront) {
@@ -138,6 +105,10 @@ function MetricCard({
 
 export default function ManagementPage() {
   const [fronts, setFronts] = useState<ManagementFront[]>([])
+  const [rituals] = useState<LeadershipRitual[]>(loadRituals)
+  const [decisions] = useState<LeadershipDecision[]>(loadDecisions)
+  const [people] = useState<LeadershipPerson[]>(loadPeople)
+  const [search, setSearch] = useState('')
 
   useEffect(() => {
     const refresh = () => setFronts(loadFronts())
@@ -163,8 +134,9 @@ export default function ManagementPage() {
           const bPriority = priorityScore(b)
           return bPriority.score - aPriority.score || aPriority.checkpoint - bPriority.checkpoint
         })
+        .filter(front => !search || [front.name, front.owner, front.nextStep].join(' ').toLocaleLowerCase('pt-BR').includes(search.toLocaleLowerCase('pt-BR')))
         .slice(0, 5),
-    [activeFronts],
+    [activeFronts, search],
   )
 
   const criticalCount = activeFronts.filter(front => front.temperature === 'Crítica').length
@@ -174,6 +146,30 @@ export default function ManagementPage() {
       .flatMap(front => [front.owner, ...front.involvedPeople])
       .filter(Boolean),
   ).size
+  const weeklyCheckpoints = activeFronts.filter(front => {
+    if (!front.nextCheckpoint) return false
+    const date = new Date(`${front.nextCheckpoint}T23:59:59`).getTime()
+    return date >= TODAY_TIME && date <= TODAY_TIME + 7 * 86_400_000
+  }).length
+  const overdueActions = activeFronts.filter(front => front.nextCheckpoint && new Date(`${front.nextCheckpoint}T23:59:59`).getTime() < TODAY_TIME).length
+  const agenda = [
+    ...rituals
+      .filter(item => {
+        const date = new Date(`${item.nextDate}T23:59:59`).getTime()
+        return date >= TODAY_TIME && date <= TODAY_TIME + 7 * 86_400_000
+      })
+      .sort((a, b) => a.nextDate.localeCompare(b.nextDate))
+      .slice(0, 3)
+      .map(item => ({ title: item.type, detail: item.name, time: formatCheckpoint(item.nextDate), href: '/rituais', icon: CalendarClock, tone: 'bg-sky-50 text-sky-600' })),
+    ...decisions
+      .filter(item => (item.status === 'Pendente' || item.status === 'Em alinhamento') && withinNextWeek(item.nextCheckpoint))
+      .slice(0, 1)
+      .map(item => ({ title: 'Decisão a tomar', detail: item.title, time: formatCheckpoint(item.nextCheckpoint), href: '/decisoes', icon: Target, tone: 'bg-amber-50 text-amber-600' })),
+    ...people
+      .filter(item => withinNextWeek(item.nextOneOnOne))
+      .slice(0, 1)
+      .map(item => ({ title: '1:1 de desenvolvimento', detail: item.name, time: formatCheckpoint(item.nextOneOnOne), href: '/pessoas', icon: UserRound, tone: 'bg-violet-50 text-violet-600' })),
+  ].slice(0, 5)
 
   return (
     <main
@@ -192,10 +188,12 @@ export default function ManagementPage() {
           <div className="flex flex-col gap-3 sm:flex-row">
             <label className="flex min-w-0 items-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-400 shadow-sm sm:w-72">
               <Search size={17} />
-              <span className="sr-only">Busca global</span>
+              <span className="sr-only">Buscar frentes prioritárias</span>
               <input
                 type="search"
-                placeholder="Buscar frentes, pessoas, decisões..."
+                value={search}
+                onChange={event => setSearch(event.target.value)}
+                placeholder="Buscar frentes, pessoas ou decisões..."
                 className="min-w-0 flex-1 bg-transparent text-sm font-medium text-zinc-800 outline-none placeholder:text-zinc-400"
               />
             </label>
@@ -219,23 +217,23 @@ export default function ManagementPage() {
           <MetricCard
             label="Frentes críticas"
             value={criticalCount}
-            detail={`${criticalCount} pedem intervenção da Joana`}
+            detail="Pedem ação"
             href="/frentes"
             icon={CircleAlert}
             tone="bg-rose-50 text-rose-600"
           />
           <MetricCard
             label="Checkpoints da semana"
-            value="5"
-            detail="2 hoje · 3 nos próximos dias"
+            value={weeklyCheckpoints}
+            detail="Próximos 7 dias"
             href="/rituais"
             icon={CalendarCheck}
             tone="bg-sky-50 text-sky-600"
           />
           <MetricCard
             label="Ações em atraso"
-            value="3"
-            detail="1 crítica · 2 importantes"
+            value={overdueActions}
+            detail="Vencidas"
             href="/frentes"
             icon={Clock3}
             tone="bg-amber-50 text-amber-600"
@@ -243,7 +241,7 @@ export default function ManagementPage() {
           <MetricCard
             label="Pessoas em foco"
             value={peopleInFocus}
-            detail="1:1s e próximos saltos"
+            detail="Precisam de atenção"
             href="/pessoas"
             icon={UsersRound}
             tone="bg-violet-50 text-violet-600"
@@ -318,8 +316,10 @@ export default function ManagementPage() {
               <Link href="/rituais" className="text-xs font-black text-[var(--retro-wine)]">Ver agenda</Link>
             </div>
 
+            <p className="mt-2 text-xs text-zinc-400">Mostra só o que vence nos próximos 7 dias.</p>
+
             <div className="mt-5 space-y-2">
-              {agenda.map(item => {
+              {agenda.length > 0 ? agenda.map(item => {
                 const Icon = item.icon
                 return (
                   <Link
@@ -337,7 +337,11 @@ export default function ManagementPage() {
                     <span className="shrink-0 text-right text-xs font-bold text-zinc-500">{item.time}</span>
                   </Link>
                 )
-              })}
+              }) : (
+                <div className="rounded-2xl border border-dashed border-zinc-200 px-4 py-5 text-sm text-zinc-500">
+                  Sem compromissos próximos.
+                </div>
+              )}
             </div>
             <Link
               href="/rituais"

@@ -183,36 +183,24 @@ function FrontModal({
               <input required value={draft.name} onChange={event => set('name', event.target.value)} className={fieldClass} />
             </label>
             <label className="grid gap-1.5 text-xs font-bold text-zinc-500 md:col-span-2">
-              Descrição
+              Descrição curta
               <textarea
                 value={draft.description}
                 onChange={event => set('description', event.target.value)}
                 rows={3}
+                placeholder="Explique em uma frase o que esta frente está tentando resolver."
                 className={fieldClass}
               />
             </label>
-            <SelectField label="Tipo" value={draft.type} options={frontTypes} onChange={value => set('type', value as ManagementFront['type'])} />
             <label className="grid gap-1.5 text-xs font-bold text-zinc-500">
               Dono
-              <input value={draft.owner} onChange={event => set('owner', event.target.value)} className={fieldClass} />
+              <input required={draft.status === 'Em andamento' || draft.status === 'Bloqueada'} value={draft.owner} onChange={event => set('owner', event.target.value)} className={fieldClass} />
             </label>
-            <SelectField
-              label="Temperatura"
-              value={draft.temperature}
-              options={frontTemperatures}
-              onChange={value => set('temperature', value as ManagementFront['temperature'])}
-            />
             <SelectField label="Status" value={draft.status} options={frontStatuses} onChange={value => set('status', value as ManagementFront['status'])} />
-            <SelectField label="Origem" value={draft.origin} options={frontOrigins} onChange={value => set('origin', value as ManagementFront['origin'])} />
-            <SelectField
-              label="Intervenção da Joana"
-              value={draft.managerIntervention}
-              options={managerInterventions}
-              onChange={value => set('managerIntervention', value as ManagementFront['managerIntervention'])}
-            />
             <label className="grid gap-1.5 text-xs font-bold text-zinc-500">
               Próximo checkpoint
               <input
+                required={draft.status === 'Em andamento' || draft.status === 'Bloqueada'}
                 type="date"
                 value={draft.nextCheckpoint}
                 onChange={event => set('nextCheckpoint', event.target.value)}
@@ -221,18 +209,41 @@ function FrontModal({
             </label>
             <label className="grid gap-1.5 text-xs font-bold text-zinc-500">
               Próximo passo
-              <input value={draft.nextStep} onChange={event => set('nextStep', event.target.value)} className={fieldClass} />
+              <input required={draft.status === 'Em andamento' || draft.status === 'Bloqueada'} value={draft.nextStep} onChange={event => set('nextStep', event.target.value)} className={fieldClass} />
             </label>
           </div>
 
-          <div className="grid gap-4 border-t border-zinc-200 pt-5 md:grid-cols-2">
-            {listField('Pessoas envolvidas', 'involvedPeople', 'Separe nomes por vírgula')}
-            {listField('Stakeholders', 'stakeholders', 'Separe stakeholders por vírgula')}
-            {listField('Riscos', 'risks', 'Separe riscos por vírgula')}
-            {listField('Decisões relacionadas', 'relatedDecisions', 'Separe decisões por vírgula')}
-            {listField('Tasks relacionadas', 'relatedTasks', 'Separe tasks por vírgula')}
-            {listField('Evidências', 'evidence', 'Separe evidências por vírgula')}
-          </div>
+          <details className="rounded-2xl border border-zinc-200 bg-white p-4">
+            <summary className="cursor-pointer text-sm font-black text-zinc-700">Campos avançados</summary>
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <SelectField label="Tipo" value={draft.type} options={frontTypes} onChange={value => set('type', value as ManagementFront['type'])} />
+              <SelectField
+                label="Temperatura"
+                value={draft.temperature}
+                options={frontTemperatures}
+                onChange={value => set('temperature', value as ManagementFront['temperature'])}
+              />
+              <SelectField label="Origem" value={draft.origin} options={frontOrigins} onChange={value => set('origin', value as ManagementFront['origin'])} />
+              <SelectField
+                label="Intervenção da Joana"
+                value={draft.managerIntervention}
+                options={managerInterventions}
+                onChange={value => set('managerIntervention', value as ManagementFront['managerIntervention'])}
+              />
+            </div>
+          </details>
+
+          <details className="rounded-2xl border border-zinc-200 bg-white p-4">
+            <summary className="cursor-pointer text-sm font-black text-zinc-700">Relações, riscos e evidências</summary>
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              {listField('Pessoas envolvidas', 'involvedPeople', 'Separe nomes por vírgula')}
+              {listField('Stakeholders', 'stakeholders', 'Separe stakeholders por vírgula')}
+              {listField('Riscos', 'risks', 'Separe riscos por vírgula')}
+              {listField('Decisões relacionadas', 'relatedDecisions', 'Separe decisões por vírgula')}
+              {listField('Tasks relacionadas', 'relatedTasks', 'Separe tasks por vírgula')}
+              {listField('Evidências', 'evidence', 'Separe evidências por vírgula')}
+            </div>
+          </details>
         </div>
 
         <div className="sticky bottom-0 flex justify-end gap-3 border-t border-zinc-100 bg-white/95 px-5 py-4 backdrop-blur sm:px-7">
@@ -255,6 +266,8 @@ export default function FrentesPage() {
   const [showFilters, setShowFilters] = useState(true)
   const [editing, setEditing] = useState<ManagementFront | null>(null)
   const [openMenu, setOpenMenu] = useState<string | null>(null)
+  const [activeAlert, setActiveAlert] = useState('')
+  const [feedback, setFeedback] = useState('')
 
   const activeFronts = useMemo(() => fronts.filter(front => front.status !== 'Arquivada' && front.status !== 'Concluída'), [fronts])
   const owners = useMemo(() => [...new Set(fronts.map(front => front.owner).filter(Boolean))].sort(), [fronts])
@@ -283,10 +296,16 @@ export default function FrentesPage() {
         (!filters.owner || front.owner === filters.owner) &&
         (!filters.origin || front.origin === filters.origin) &&
         (!filters.intervention || front.managerIntervention === filters.intervention) &&
-        (!filters.status || front.status === filters.status)
+        (!filters.status || front.status === filters.status) &&
+        (!activeAlert || (
+          (activeAlert === 'Sem update há 7 dias' && daysSince(front.updatedAt) >= 7) ||
+          (activeAlert === 'Conflito de prioridades' && front.temperature !== 'Saudável') ||
+          (activeAlert === 'Decisão sem dono' && !front.owner && front.relatedDecisions.length > 0) ||
+          (activeAlert === 'Sem próximo checkpoint' && !front.nextCheckpoint)
+        ))
       )
     })
-  }, [filters, fronts, search])
+  }, [activeAlert, filters, fronts, search])
 
   const ownerPriorityConflicts = useMemo(() => {
     const counts = new Map<string, number>()
@@ -336,23 +355,22 @@ export default function FrentesPage() {
     const exists = fronts.some(item => item.id === front.id)
     persist(exists ? fronts.map(item => (item.id === front.id ? front : item)) : [front, ...fronts])
     setEditing(null)
+    setFeedback(exists ? 'Frente atualizada.' : 'Frente criada.')
+    window.setTimeout(() => setFeedback(''), 2200)
   }
 
   const changeArchivedState = (front: ManagementFront) => {
     const status = front.status === 'Arquivada' ? 'Em andamento' : 'Arquivada'
     persist(fronts.map(item => (item.id === front.id ? { ...item, status, updatedAt: new Date().toISOString() } : item)))
     setOpenMenu(null)
+    setFeedback(status === 'Arquivada' ? 'Frente arquivada.' : 'Frente reaberta.')
+    window.setTimeout(() => setFeedback(''), 2200)
   }
 
   const filterForAlert = (label: string) => {
     setSearch('')
-    if (label === 'Sem update há 7 dias') {
-      setFilters(emptyFilters)
-    } else if (label === 'Decisão sem dono' || label === 'Sem próximo checkpoint') {
-      setFilters({ ...emptyFilters, status: 'Não iniciada' })
-    } else {
-      setFilters({ ...emptyFilters, temperature: 'Atenção' })
-    }
+    setFilters(emptyFilters)
+    setActiveAlert(label)
   }
 
   return (
@@ -460,6 +478,17 @@ export default function FrentesPage() {
           </section>
         )}
 
+        {(activeAlert || feedback) && (
+          <div className="mt-4 flex flex-wrap items-center gap-2" role="status">
+            {activeAlert && (
+              <button type="button" onClick={() => setActiveAlert('')} className="rounded-full bg-[rgba(135,0,47,0.08)] px-3 py-1.5 text-xs font-black text-[var(--retro-wine)]">
+                Alerta: {activeAlert} · limpar
+              </button>
+            )}
+            {feedback && <span className="rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-black text-emerald-700">{feedback}</span>}
+          </div>
+        )}
+
         <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_300px]">
           <section className={`${cardClass} min-w-0 overflow-hidden`}>
             <div className="flex items-center justify-between gap-4 px-5 py-5 sm:px-6">
@@ -559,6 +588,7 @@ export default function FrentesPage() {
                   onClick={() => {
                     setSearch('')
                     setFilters(emptyFilters)
+                    setActiveAlert('')
                   }}
                   className="mt-4 text-sm font-black text-[var(--retro-wine)]"
                 >

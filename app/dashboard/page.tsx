@@ -1,5 +1,8 @@
+'use client'
+
 import type { ElementType } from 'react'
 import Link from 'next/link'
+import { useMemo, useState } from 'react'
 import {
   ArrowRight,
   BriefcaseBusiness,
@@ -26,24 +29,24 @@ const topics = ['Sobrecarga', 'Priorização', 'Desenvolvimento', 'Dependências
 
 const nextSteps = [
   {
-    title: 'Criar frente de governança de prioridades',
-    description: 'Estruturar critérios e cadência de revisão.',
+    title: 'Criar frente de prioridades',
+    description: 'Definir critérios e cadência.',
     meta: 'Até 30 jun',
     href: '/frentes',
     icon: GitBranch,
     tone: 'bg-violet-50 text-violet-600',
   },
   {
-    title: 'Agendar alinhamento com área parceira',
-    description: 'Tratar dependências e acordar próximos passos.',
+    title: 'Agendar alinhamento',
+    description: 'Tratar dependências e fechar próximos passos.',
     meta: 'Até 26 jun',
     href: '/decisoes',
     icon: CalendarDays,
     tone: 'bg-sky-50 text-sky-600',
   },
   {
-    title: 'Revisar PDI de uma pessoa em foco',
-    description: 'Validar evidências e próximo salto.',
+    title: 'Revisar PDI em foco',
+    description: 'Checar evidências e próximo salto.',
     meta: 'Até 30 jun',
     href: '/pessoas',
     icon: UserRound,
@@ -51,7 +54,7 @@ const nextSteps = [
   },
   {
     title: 'Monitorar capacidade do time',
-    description: 'Acompanhar carga e foco nas próximas semanas.',
+    description: 'Acompanhar carga nas próximas semanas.',
     meta: 'Contínuo',
     href: '/frentes',
     icon: Eye,
@@ -90,12 +93,12 @@ const retros = [
 ]
 
 const classifications = [
-  { label: 'Frente', description: 'Tema vira uma frente de trabalho ou atualiza uma já existente.', href: '/frentes', tone: 'bg-violet-50 text-violet-700' },
-  { label: 'Ação', description: 'Tarefa prática com responsável e prazo.', href: '/frentes', tone: 'bg-amber-50 text-amber-700' },
-  { label: 'Decisão', description: 'Escolha ou definição da liderança ou do time.', href: '/decisoes', tone: 'bg-sky-50 text-sky-700' },
-  { label: 'PDI', description: 'Sinal ligado ao desenvolvimento individual.', href: '/pessoas', tone: 'bg-emerald-50 text-emerald-700' },
-  { label: 'Monitoramento', description: 'Tema para acompanhar ao longo do tempo.', href: '/frentes', tone: 'bg-orange-50 text-orange-700' },
-  { label: 'FCA', description: 'Fato, causa ou aprendizado; usado só quando necessário.', href: '/frentes', tone: 'bg-rose-50 text-rose-700' },
+  { label: 'Frente', description: 'Vira ou atualiza uma frente.', href: '/frentes', tone: 'bg-violet-50 text-violet-700' },
+  { label: 'Ação', description: 'Tarefa com responsável.', href: '/frentes', tone: 'bg-amber-50 text-amber-700' },
+  { label: 'Decisão', description: 'Escolha que precisa registro.', href: '/decisoes', tone: 'bg-sky-50 text-sky-700' },
+  { label: 'PDI', description: 'Desenvolvimento individual.', href: '/pessoas', tone: 'bg-emerald-50 text-emerald-700' },
+  { label: 'Monitoramento', description: 'Acompanhar ao longo do tempo.', href: '/frentes', tone: 'bg-orange-50 text-orange-700' },
+  { label: 'FCA', description: 'Usar só quando fizer sentido.', href: '/frentes', tone: 'bg-rose-50 text-rose-700' },
 ]
 
 const kpis: Array<{ label: string; value: string; detail: string; icon: ElementType; tone: string; href: string }> = [
@@ -115,6 +118,13 @@ function SectionLink({ href, children }: { href: string; children: React.ReactNo
 }
 
 export default function DashboardPage() {
+  const [search, setSearch] = useState('')
+  const [onlyOpen, setOnlyOpen] = useState(false)
+  const filteredRetros = useMemo(() => retros.filter(retro => {
+    const matchesSearch = !search || [retro.month, retro.mood, ...retro.topics].join(' ').toLocaleLowerCase('pt-BR').includes(search.toLocaleLowerCase('pt-BR'))
+    return matchesSearch && (!onlyOpen || retro.status !== 'Concluídas')
+  }), [onlyOpen, search])
+
   return (
     <main className="min-h-screen bg-[var(--retro-bg)] px-4 py-7 text-[var(--retro-ink)] sm:px-7 lg:px-9 lg:py-9">
       <div className="mx-auto max-w-[1480px]">
@@ -128,18 +138,22 @@ export default function DashboardPage() {
             <label className="flex min-w-0 items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 py-2.5 shadow-sm sm:w-72">
               <Search size={17} className="shrink-0 text-zinc-400" />
               <span className="sr-only">Buscar na retro qualitativa</span>
-              <input className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-zinc-400" placeholder="Buscar sinais, temas, pessoas..." />
+              <input value={search} onChange={event => setSearch(event.target.value)} className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-zinc-400" placeholder="Buscar histórico e temas..." />
             </label>
-            <button type="button" className="inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-700 shadow-sm transition hover:bg-zinc-50">
+            <button type="button" onClick={() => setOnlyOpen(value => !value)} className={`inline-flex items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-bold shadow-sm transition ${onlyOpen ? 'border-[var(--retro-wine)] bg-[rgba(135,0,47,0.08)] text-[var(--retro-wine)]' : 'border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50'}`}>
               <Filter size={16} />
-              Filtros
+              {onlyOpen ? 'Só em aberto' : 'Mostrar em aberto'}
             </button>
-            <button type="button" className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--retro-wine)] px-4 py-2.5 text-sm font-black text-white shadow-lg shadow-[rgba(135,0,47,0.18)] transition hover:bg-[var(--retro-wine-deep)]">
+            <button type="button" onClick={() => window.dispatchEvent(new Event('open-capture-input'))} className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--retro-wine)] px-4 py-2.5 text-sm font-black text-white shadow-lg shadow-[rgba(135,0,47,0.18)] transition hover:bg-[var(--retro-wine-deep)]">
               <Plus size={17} />
-              Nova retro
+              Capturar sinal
             </button>
           </div>
         </header>
+
+        <p className="mt-3 text-xs font-medium text-zinc-400">
+          A busca e o filtro abaixo afetam o histórico de retros.
+        </p>
 
         <section aria-label="Indicadores da retro" className="mt-7 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {kpis.map(({ label, value, detail, icon: Icon, tone, href }) => (
@@ -222,7 +236,7 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h2 className="text-lg font-black">Próximos passos do ciclo</h2>
-                <p className="mt-1 text-xs text-zinc-400">Itens gerados ou atualizados a partir da retro.</p>
+                <p className="mt-1 text-xs text-zinc-400">Sinais validados viram ação aqui.</p>
               </div>
               <ClipboardCheck size={20} className="text-[var(--retro-wine)]" />
             </div>
@@ -248,7 +262,7 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between gap-3 px-5 py-5 sm:px-6">
               <div>
                 <h2 className="text-lg font-black">Histórico de retros</h2>
-                <p className="mt-1 text-xs text-zinc-400">Evolução qualitativa e destino dos sinais por ciclo.</p>
+                <p className="mt-1 text-xs text-zinc-400">Busca e filtro alteram esta lista.</p>
               </div>
               <FileSearch size={20} className="text-[var(--retro-wine)]" />
             </div>
@@ -265,7 +279,7 @@ export default function DashboardPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-100">
-                  {retros.map(retro => (
+                  {filteredRetros.map(retro => (
                     <tr key={retro.month} className="transition hover:bg-zinc-50/70">
                       <td className="px-6 py-4 font-black text-zinc-900">{retro.month}</td>
                       <td className="px-4 py-4"><span className={`rounded-full px-2.5 py-1 font-bold ${retro.moodTone}`}>{retro.mood}</span></td>
@@ -279,6 +293,7 @@ export default function DashboardPage() {
                   ))}
                 </tbody>
               </table>
+              {!filteredRetros.length && <p className="p-8 text-center text-sm text-zinc-500">Nenhuma retro encontrada. Limpe a busca ou o filtro.</p>}
             </div>
             <div className="border-t border-zinc-100 px-6 py-4 text-center"><SectionLink href="#historico">Ver histórico completo</SectionLink></div>
           </article>
