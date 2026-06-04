@@ -33,11 +33,11 @@ function SummaryCard({ icon: Icon, label, value, detail, tone }: { icon: Element
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-2xl font-black text-zinc-900">{value}</p>
-          <p className="mt-1 text-xs font-black text-zinc-700">{label}</p>
+          <p className="mt-1 text-xs font-semibold text-zinc-700">{label}</p>
         </div>
         <span className={`grid h-9 w-9 place-items-center rounded-xl ${tone}`}><Icon size={16} /></span>
       </div>
-      <p className="mt-3 text-[11px] font-semibold text-zinc-400">{detail}</p>
+      <p className="mt-3 text-xs font-semibold text-zinc-400">{detail}</p>
     </article>
   )
 }
@@ -99,27 +99,27 @@ export default function CockpitOverview({ plans }: { plans: ManagementPlan[] }) 
         <SummaryCard icon={ClipboardCheck} label="Qualidade da gestão" value={`${managementQuality}%`} detail="Clareza e completude" tone="bg-emerald-50 text-emerald-700" />
       </div>
 
-      <section className="mt-4 rounded-[2rem] border border-black/5 bg-white/88 p-5 shadow-xl shadow-zinc-950/5 backdrop-blur-xl">
+      <section aria-label="Ações prioritárias da liderança" className="mt-4 rounded-[2rem] border border-black/5 bg-white/88 p-5 shadow-xl shadow-zinc-950/5 backdrop-blur-xl">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-[var(--retro-wine)]"><ArrowUpRight size={14} /> Onde atuar agora</p>
+            <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--retro-wine)]"><ArrowUpRight size={14} /> Onde atuar agora</p>
             <h2 className="mt-2 text-2xl font-black">As 5 ações mais importantes para a liderança</h2>
           </div>
-          <span className="rounded-xl bg-zinc-100 px-3 py-1.5 text-xs font-black text-zinc-500">Priorização automática</span>
+          <span className="rounded-xl bg-zinc-100 px-3 py-1.5 text-xs font-semibold text-zinc-500">Priorização automática</span>
         </div>
         <div className="mt-5 grid gap-2 lg:grid-cols-5">
           {actions.length ? actions.map((action, index) => (
             <article key={action.id} className="rounded-2xl border border-zinc-200 bg-white p-4">
               <div className="flex items-start justify-between gap-2">
-                <span className={`rounded-lg px-2 py-1 text-[9px] font-black ${action.tone}`}>{action.kind}</span>
-                <span className="text-xs font-black text-zinc-300">0{index + 1}</span>
+                <span className={`rounded-lg px-2 py-1 text-[12px] font-semibold ${action.tone}`}>{action.kind}</span>
+                <span className="text-xs font-semibold text-zinc-300">0{index + 1}</span>
               </div>
-              <p className="mt-3 text-sm font-black leading-5 text-zinc-900">{action.title}</p>
+              <p className="mt-3 text-sm font-semibold leading-5 text-zinc-900">{action.title}</p>
               <p className="mt-2 text-xs font-semibold leading-5 text-zinc-500">{action.reason}</p>
-              <p className="mt-3 truncate text-[10px] font-black uppercase tracking-[0.1em] text-zinc-400">{action.owner}</p>
+              <p className="mt-3 truncate text-[12px] font-semibold uppercase tracking-[0.1em] text-zinc-400">{action.owner}</p>
             </article>
           )) : (
-            <p className="col-span-full rounded-2xl bg-emerald-50 p-5 text-sm font-black text-emerald-700"><CheckCircle2 className="mr-2 inline" size={16} /> Nenhum item prioritário identificado.</p>
+            <p className="col-span-full rounded-2xl bg-emerald-50 p-5 text-sm font-semibold text-emerald-700"><CheckCircle2 className="mr-2 inline" size={16} /> Nenhum item prioritário identificado.</p>
           )}
         </div>
       </section>

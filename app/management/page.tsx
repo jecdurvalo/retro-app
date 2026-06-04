@@ -1,23 +1,28 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useMemo, useState } from 'react'
+import { Suspense, useEffect, useMemo, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
   ArrowDownRight,
   ArrowUpRight,
   BarChart3,
+  BriefcaseBusiness,
   CalendarCheck,
   CheckCircle2,
   ChevronDown,
   Clock3,
+  Flame,
   Home,
   Import,
+  LayoutDashboard,
   Plus,
   Save,
   ShieldCheck,
   Target,
   Trash2,
   UserRound,
+  UsersRound,
 } from 'lucide-react'
 import { isMoodItem, parseMoodItem } from '@/lib/mood'
 import {
@@ -33,6 +38,8 @@ import {
   type PlanCriticality,
   type RetroSnapshot,
 } from '@/lib/management'
+import { loadHotTopics } from '@/lib/hot-topics'
+import { loadInitiatives } from '@/lib/initiatives'
 import { SESSION_ID, supabase, type Category, type RetroItem } from '@/lib/supabase'
 import CockpitOverview from './cockpit-overview'
 import DelegationBoard from './delegation-board'
@@ -79,8 +86,10 @@ const STOP_WORDS = new Set([
   'pela', 'pelo', 'por', 'porque', 'pra', 'que', 'sem', 'ser', 'sua', 'tambem', 'tem', 'uma', 'vamos',
 ])
 
+const TAB_IDS = ['visao-geral', 'planos', 'iniciativas', 'temas', 'delegacao'] as const
+
 function normalizeWord(word: string) {
-  return word.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  return word.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
 }
 
 function getThemes(items: RetroItem[]) {
@@ -131,7 +140,18 @@ function formatDate(value: string) {
   return new Date(`${value}T12:00:00`).toLocaleDateString('pt-BR')
 }
 
-export default function ManagementPage() {
+function ManagementContent() {
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const requestedTab = searchParams.get('tab')
+  const activeTab = requestedTab && TAB_IDS.includes(requestedTab as (typeof TAB_IDS)[number])
+    ? requestedTab
+    : 'visao-geral'
+
+  function setTab(id: string) {
+    router.push(`/management?tab=${id}`, { scroll: false })
+  }
+
   const [plans, setPlans] = useState<ManagementPlan[]>(loadManagementPlans)
   const [snapshots, setSnapshots] = useState<RetroSnapshot[]>(loadRetroSnapshots)
   const [items, setItems] = useState<RetroItem[]>([])
@@ -139,6 +159,8 @@ export default function ManagementPage() {
   const [activePlanId, setActivePlanId] = useState<string | null>(null)
   const [snapshotDate, setSnapshotDate] = useState(todayValue)
   const [snapshotSaved, setSnapshotSaved] = useState(false)
+  const [initiativeAlerts, setInitiativeAlerts] = useState(0)
+  const [topicAlerts, setTopicAlerts] = useState(0)
 
   useEffect(() => {
     supabase
@@ -160,6 +182,16 @@ export default function ManagementPage() {
     window.localStorage.setItem(RETRO_SNAPSHOT_STORAGE_KEY, JSON.stringify(snapshots))
   }, [snapshots])
 
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      const initiatives = loadInitiatives()
+      const topics = loadHotTopics()
+      setInitiativeAlerts(initiatives.filter(i => i.status === 'at_risk' || i.status === 'blocked').length)
+      setTopicAlerts(topics.filter(t => t.temperature === 'critical' || t.temperature === 'attention').length)
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [])
+
   const moodEntries = useMemo(() => items.map(parseMoodItem).filter(entry => entry !== null), [items])
   const currentMood = useMemo(() => {
     if (moodEntries.length === 0) return 0
@@ -170,6 +202,22 @@ export default function ManagementPage() {
     ? currentMood - previousSnapshot.moodAverage
     : 0
   const openPlans = plans.filter(plan => plan.status !== 'done')
+
+  const tabs = [
+    { id: 'visao-geral', label: 'Visão geral', icon: LayoutDashboard, badge: undefined as number | undefined },
+    { id: 'planos', label: 'Planos & FCAs', icon: Target, badge: plans.filter(p => p.status !== 'done').length },
+    { id: 'iniciativas', label: 'Iniciativas', icon: BriefcaseBusiness, badge: initiativeAlerts },
+    { id: 'temas', label: 'Temas quentes', icon: Flame, badge: topicAlerts },
+    { id: 'delegacao', label: 'Delegação & histórico', icon: UsersRound, badge: undefined as number | undefined },
+  ]
+
+  function handleTabKeyDown(event: React.KeyboardEvent, currentIndex: number) {
+    const count = tabs.length
+    if (event.key === 'ArrowRight') { event.preventDefault(); setTab(tabs[(currentIndex + 1) % count].id) }
+    if (event.key === 'ArrowLeft') { event.preventDefault(); setTab(tabs[(currentIndex - 1 + count) % count].id) }
+    if (event.key === 'Home') { event.preventDefault(); setTab(tabs[0].id) }
+    if (event.key === 'End') { event.preventDefault(); setTab(tabs[count - 1].id) }
+  }
 
   function updatePlan(id: string, updates: Partial<ManagementPlan>) {
     setPlans(current => current.map(plan => (
@@ -266,6 +314,13 @@ export default function ManagementPage() {
 
   return (
     <main className="min-h-screen bg-[var(--retro-bg)] text-[var(--retro-ink)]">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:rounded focus:bg-white focus:px-3 focus:py-2 focus:text-sm focus:font-bold focus:text-zinc-900 focus:shadow"
+      >
+        Pular para o conteúdo
+      </a>
+
       <div className="fixed inset-0 -z-10 bg-[linear-gradient(135deg,rgba(135,0,47,0.12),rgba(255,255,255,0.96)_32%,rgba(247,242,240,0.98)),radial-gradient(circle_at_88%_8%,rgba(52,232,207,0.2),transparent_24%)]" />
       <div className="fixed inset-x-0 top-0 z-30 h-2 bg-[var(--retro-wine)]" />
 
@@ -284,224 +339,300 @@ export default function ManagementPage() {
               <p className="mt-1 text-xs font-semibold text-zinc-400">Retros, planos, iniciativas e temas críticos em uma visão única.</p>
             </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <button onClick={importDashboardPlans} className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-black text-zinc-700">
-              <Import size={16} />
-              Importar planos da retro
-            </button>
-            <button onClick={addPlan} className="inline-flex items-center gap-2 rounded-2xl bg-[var(--retro-wine)] px-4 py-3 text-sm font-black text-white shadow-lg shadow-[rgba(135,0,47,0.18)]">
-              <Plus size={16} />
-              Novo FCA
-            </button>
-          </div>
         </header>
 
-        <CockpitOverview plans={plans} />
-
-        <ExecutiveReading plans={plans} snapshots={snapshots} currentMood={currentMood || null} />
-
-        <ManagementCopilot plans={plans} snapshots={snapshots} currentMood={currentMood || null} />
-
-        <ManagementQuality plans={plans} />
-
-        <HotTopicRadar />
-
-        <InitiativePortfolio />
-
-        <section className="mt-4 rounded-[2rem] border border-black/5 bg-white/88 p-5 shadow-xl shadow-zinc-950/5 backdrop-blur-xl">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-[var(--retro-wine)]">
-                <Target size={14} />
-                Planos de ação e FCAs
-              </p>
-              <h2 className="mt-2 text-2xl font-black">Do fato até a evidência de resultado</h2>
+        <div className="mt-4 overflow-hidden rounded-[2rem] border border-black/5 bg-white/85 shadow-xl shadow-zinc-950/5 backdrop-blur-xl">
+          <div className="overflow-x-auto border-b border-zinc-200 bg-zinc-50/80">
+            <div role="tablist" aria-label="Seções do cockpit" className="flex min-w-max gap-0 px-4">
+              {tabs.map((tab, index) => {
+                const Icon = tab.icon
+                return (
+                  <button
+                    key={tab.id}
+                    role="tab"
+                    id={`tab-${tab.id}`}
+                    aria-selected={activeTab === tab.id}
+                    aria-controls={`panel-${tab.id}`}
+                    tabIndex={activeTab === tab.id ? 0 : -1}
+                    onClick={() => setTab(tab.id)}
+                    onKeyDown={e => handleTabKeyDown(e, index)}
+                    className={`flex items-center gap-2 border-b-2 px-3 py-3 text-xs font-semibold transition whitespace-nowrap ${
+                      activeTab === tab.id
+                        ? 'border-[var(--retro-wine)] text-[var(--retro-wine)]'
+                        : 'border-transparent text-zinc-400 hover:text-zinc-700'
+                    }`}
+                  >
+                    <Icon size={14} />
+                    {tab.label}
+                    {tab.badge != null && tab.badge > 0 && (
+                      <span className={`rounded-full px-1.5 py-0.5 text-[12px] font-semibold ${
+                        activeTab === tab.id ? 'bg-[rgba(135,0,47,0.1)] text-[var(--retro-wine)]' : 'bg-zinc-200 text-zinc-500'
+                      }`}>
+                        {tab.badge}
+                      </span>
+                    )}
+                  </button>
+                )
+              })}
             </div>
-            <p className="text-sm font-semibold text-zinc-400">{plans.length} plano{plans.length !== 1 ? 's' : ''} acompanhado{plans.length !== 1 ? 's' : ''}</p>
           </div>
 
-          {plans.length === 0 ? (
-            <div className="mt-5 grid min-h-56 place-items-center rounded-3xl border border-dashed border-zinc-300 bg-zinc-50 p-6 text-center">
-              <div>
-                <Target className="mx-auto text-zinc-300" size={30} />
-                <p className="mt-3 font-black text-zinc-700">Sua carteira ainda está vazia</p>
-                <p className="mt-1 text-sm font-semibold text-zinc-400">Importe os planos da retro ou crie o primeiro FCA.</p>
-              </div>
-            </div>
-          ) : (
-            <div className="mt-5 space-y-3">
-              {plans.map(plan => {
-                const expanded = activePlanId === plan.id
-                const completeness = getFcaCompleteness(plan)
-                const attention = isOverdue(plan) || isCheckInLate(plan) || plan.status === 'blocked'
+          <div id="main-content" tabIndex={-1} className="p-5">
+            {tabs.map(tab => (
+              <div
+                key={tab.id}
+                role="tabpanel"
+                id={`panel-${tab.id}`}
+                aria-labelledby={`tab-${tab.id}`}
+                hidden={activeTab !== tab.id}
+              >
+                {tab.id === 'visao-geral' && (
+                  <div>
+                    <CockpitOverview plans={plans} />
+                    <ExecutiveReading plans={plans} snapshots={snapshots} currentMood={currentMood || null} />
+                    <ManagementCopilot plans={plans} snapshots={snapshots} currentMood={currentMood || null} />
+                  </div>
+                )}
 
-                return (
-                  <article key={plan.id} className={`overflow-hidden rounded-3xl border bg-white shadow-sm ${attention ? 'border-rose-200' : 'border-zinc-200'}`}>
-                    <button type="button" onClick={() => setActivePlanId(expanded ? null : plan.id)} className="flex w-full flex-col gap-4 p-4 text-left lg:flex-row lg:items-center">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className={`rounded-xl px-2.5 py-1 text-[11px] font-black ${criticalityMeta[plan.criticality].tone}`}>{criticalityMeta[plan.criticality].label}</span>
-                          <span className={`rounded-xl px-2.5 py-1 text-[11px] font-black ${statusMeta[plan.status].tone}`}>{statusMeta[plan.status].label}</span>
-                          {attention && <span className="rounded-xl bg-rose-100 px-2.5 py-1 text-[11px] font-black text-rose-700">Atenção</span>}
+                {tab.id === 'planos' && (
+                  <div>
+                    <div className="mb-4 flex flex-wrap gap-2 justify-end">
+                      <button onClick={importDashboardPlans} className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold text-zinc-700">
+                        <Import size={16} />
+                        Importar planos da retro
+                      </button>
+                      <button onClick={addPlan} className="inline-flex items-center gap-2 rounded-2xl bg-[var(--retro-wine)] px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-[rgba(135,0,47,0.18)]">
+                        <Plus size={16} />
+                        Novo FCA
+                      </button>
+                    </div>
+
+                    <ManagementQuality plans={plans} />
+
+                    <section className="mt-4 rounded-[2rem] border border-black/5 bg-white/88 p-5 shadow-xl shadow-zinc-950/5 backdrop-blur-xl">
+                      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                        <div>
+                          <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--retro-wine)]">
+                            <Target size={14} />
+                            Planos de ação e FCAs
+                          </p>
+                          <h2 className="mt-2 text-2xl font-black">Do fato até a evidência de resultado</h2>
                         </div>
-                        <p className="mt-2 truncate text-lg font-black text-zinc-900">{plan.title}</p>
-                        <p className="mt-1 truncate text-sm font-semibold text-zinc-400">{plan.action || 'Ação ainda não definida'}</p>
+                        <p className="text-sm font-semibold text-zinc-400">{plans.length} plano{plans.length !== 1 ? 's' : ''} acompanhado{plans.length !== 1 ? 's' : ''}</p>
                       </div>
-                      <div className="grid shrink-0 grid-cols-3 gap-2 text-center">
-                        <div className="rounded-2xl bg-zinc-50 px-3 py-2">
-                          <p className="text-xs font-black text-zinc-800">{plan.owner || '—'}</p>
-                          <p className="mt-0.5 text-[10px] font-black uppercase tracking-[0.1em] text-zinc-400">Responsável</p>
-                        </div>
-                        <div className="rounded-2xl bg-zinc-50 px-3 py-2">
-                          <p className="text-xs font-black text-zinc-800">{formatDate(plan.dueDate)}</p>
-                          <p className="mt-0.5 text-[10px] font-black uppercase tracking-[0.1em] text-zinc-400">Prazo</p>
-                        </div>
-                        <div className="rounded-2xl bg-zinc-50 px-3 py-2">
-                          <p className="text-xs font-black text-zinc-800">{completeness}%</p>
-                          <p className="mt-0.5 text-[10px] font-black uppercase tracking-[0.1em] text-zinc-400">FCA</p>
-                        </div>
-                      </div>
-                      <ChevronDown className={`shrink-0 text-zinc-400 transition ${expanded ? 'rotate-180' : ''}`} size={18} />
-                    </button>
 
-                    {expanded && (
-                      <div className="border-t border-zinc-100 bg-zinc-50/70 p-4">
-                        <div className="grid gap-3 lg:grid-cols-3">
-                          <label className="block lg:col-span-2">
-                            <span className="text-xs font-black uppercase tracking-[0.12em] text-zinc-400">Título</span>
-                            <input value={plan.title} onChange={event => updatePlan(plan.id, { title: event.target.value })} className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold outline-none focus:border-[var(--retro-wine)]" />
-                          </label>
-                          <label className="block">
-                            <span className="text-xs font-black uppercase tracking-[0.12em] text-zinc-400">Criticidade</span>
-                            <select value={plan.criticality} onChange={event => updatePlan(plan.id, { criticality: event.target.value as PlanCriticality })} className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold outline-none focus:border-[var(--retro-wine)]">
-                              {Object.entries(criticalityMeta).map(([value, meta]) => <option key={value} value={value}>{meta.label}</option>)}
-                            </select>
-                          </label>
-                          <label className="block">
-                            <span className="text-xs font-black uppercase tracking-[0.12em] text-zinc-400">Fato</span>
-                            <textarea value={plan.fact} onChange={event => updatePlan(plan.id, { fact: event.target.value })} rows={4} placeholder="O que aconteceu, com evidência?" className="mt-2 w-full resize-none rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold leading-6 outline-none focus:border-[var(--retro-wine)]" />
-                          </label>
-                          <label className="block">
-                            <span className="text-xs font-black uppercase tracking-[0.12em] text-zinc-400">Causa</span>
-                            <textarea value={plan.cause} onChange={event => updatePlan(plan.id, { cause: event.target.value })} rows={4} placeholder="Por que isso aconteceu?" className="mt-2 w-full resize-none rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold leading-6 outline-none focus:border-[var(--retro-wine)]" />
-                          </label>
-                          <label className="block">
-                            <span className="text-xs font-black uppercase tracking-[0.12em] text-zinc-400">Ação</span>
-                            <textarea value={plan.action} onChange={event => updatePlan(plan.id, { action: event.target.value })} rows={4} placeholder="O que será feito?" className="mt-2 w-full resize-none rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold leading-6 outline-none focus:border-[var(--retro-wine)]" />
-                          </label>
+                      {plans.length === 0 ? (
+                        <div className="mt-5 grid min-h-56 place-items-center rounded-3xl border border-dashed border-zinc-300 bg-zinc-50 p-6 text-center">
+                          <div>
+                            <Target className="mx-auto text-zinc-300" size={30} />
+                            <p className="mt-3 font-black text-zinc-700">Sua carteira ainda está vazia</p>
+                            <p className="mt-1 text-sm font-semibold text-zinc-400">Importe os planos da retro ou crie o primeiro FCA.</p>
+                          </div>
                         </div>
+                      ) : (
+                        <div className="mt-5 space-y-3">
+                          {plans.map(plan => {
+                            const expanded = activePlanId === plan.id
+                            const completeness = getFcaCompleteness(plan)
+                            const attention = isOverdue(plan) || isCheckInLate(plan) || plan.status === 'blocked'
 
-                        <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-                          <label className="block">
-                            <span className="flex items-center gap-1 text-xs font-black uppercase tracking-[0.1em] text-zinc-400"><UserRound size={13} />Responsável</span>
-                            <input value={plan.owner} onChange={event => updatePlan(plan.id, { owner: event.target.value })} className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-3 py-3 text-sm font-semibold outline-none focus:border-[var(--retro-wine)]" />
-                          </label>
-                          <label className="block">
-                            <span className="text-xs font-black uppercase tracking-[0.1em] text-zinc-400">Status</span>
-                            <select value={plan.status} onChange={event => updatePlan(plan.id, { status: event.target.value as ManagementPlanStatus })} className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-3 py-3 text-sm font-semibold outline-none focus:border-[var(--retro-wine)]">
-                              {Object.entries(statusMeta).map(([value, meta]) => <option key={value} value={value}>{meta.label}</option>)}
-                            </select>
-                          </label>
-                          <label className="block">
-                            <span className="text-xs font-black uppercase tracking-[0.1em] text-zinc-400">Prazo</span>
-                            <input type="date" value={plan.dueDate} onChange={event => updatePlan(plan.id, { dueDate: event.target.value })} className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-3 py-3 text-sm font-semibold outline-none focus:border-[var(--retro-wine)]" />
-                          </label>
-                          <label className="block">
-                            <span className="flex items-center gap-1 text-xs font-black uppercase tracking-[0.1em] text-zinc-400"><CalendarCheck size={13} />Próximo check-in</span>
-                            <input type="date" value={plan.nextCheckIn} onChange={event => updatePlan(plan.id, { nextCheckIn: event.target.value })} className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-3 py-3 text-sm font-semibold outline-none focus:border-[var(--retro-wine)]" />
-                          </label>
-                          <label className="block">
-                            <span className="text-xs font-black uppercase tracking-[0.1em] text-zinc-400">Métrica de sucesso</span>
-                            <input value={plan.successMetric} onChange={event => updatePlan(plan.id, { successMetric: event.target.value })} placeholder="Como saberemos?" className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-3 py-3 text-sm font-semibold outline-none focus:border-[var(--retro-wine)]" />
-                          </label>
+                            return (
+                              <article key={plan.id} className={`overflow-hidden rounded-3xl border bg-white shadow-sm ${attention ? 'border-rose-200' : 'border-zinc-200'}`}>
+                                <button type="button" onClick={() => setActivePlanId(expanded ? null : plan.id)} className="flex w-full flex-col gap-4 p-4 text-left lg:flex-row lg:items-center">
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <span className={`rounded-xl px-2.5 py-1 text-xs font-semibold ${criticalityMeta[plan.criticality].tone}`}>{criticalityMeta[plan.criticality].label}</span>
+                                      <span className={`rounded-xl px-2.5 py-1 text-xs font-semibold ${statusMeta[plan.status].tone}`}>{statusMeta[plan.status].label}</span>
+                                      {attention && <span className="rounded-xl bg-rose-100 px-2.5 py-1 text-xs font-semibold text-rose-700">Atenção</span>}
+                                    </div>
+                                    <p className="mt-2 truncate text-lg font-black text-zinc-900">{plan.title}</p>
+                                    <p className="mt-1 truncate text-sm font-semibold text-zinc-400">{plan.action || 'Ação ainda não definida'}</p>
+                                  </div>
+                                  <div className="grid shrink-0 grid-cols-3 gap-2 text-center">
+                                    <div className="rounded-2xl bg-zinc-50 px-3 py-2">
+                                      <p className="text-xs font-black text-zinc-800">{plan.owner || '—'}</p>
+                                      <p className="mt-0.5 text-xs font-semibold uppercase tracking-[0.1em] text-zinc-400">Responsável</p>
+                                    </div>
+                                    <div className="rounded-2xl bg-zinc-50 px-3 py-2">
+                                      <p className="text-xs font-black text-zinc-800">{formatDate(plan.dueDate)}</p>
+                                      <p className="mt-0.5 text-xs font-semibold uppercase tracking-[0.1em] text-zinc-400">Prazo</p>
+                                    </div>
+                                    <div className="rounded-2xl bg-zinc-50 px-3 py-2">
+                                      <p className="text-xs font-black text-zinc-800">{completeness}%</p>
+                                      <p className="mt-0.5 text-xs font-semibold uppercase tracking-[0.1em] text-zinc-400">FCA</p>
+                                    </div>
+                                  </div>
+                                  <ChevronDown className={`shrink-0 text-zinc-400 transition ${expanded ? 'rotate-180' : ''}`} size={18} />
+                                </button>
+
+                                {expanded && (
+                                  <div className="border-t border-zinc-100 bg-zinc-50/70 p-4">
+                                    <div className="grid gap-3 lg:grid-cols-3">
+                                      <label className="block lg:col-span-2">
+                                        <span className="text-xs font-black uppercase tracking-[0.12em] text-zinc-400">Título</span>
+                                        <input value={plan.title} onChange={event => updatePlan(plan.id, { title: event.target.value })} className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold outline-none focus:border-[var(--retro-wine)]" />
+                                      </label>
+                                      <label className="block">
+                                        <span className="text-xs font-black uppercase tracking-[0.12em] text-zinc-400">Criticidade</span>
+                                        <select value={plan.criticality} onChange={event => updatePlan(plan.id, { criticality: event.target.value as PlanCriticality })} className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold outline-none focus:border-[var(--retro-wine)]">
+                                          {Object.entries(criticalityMeta).map(([value, meta]) => <option key={value} value={value}>{meta.label}</option>)}
+                                        </select>
+                                      </label>
+                                      <label className="block">
+                                        <span className="text-xs font-black uppercase tracking-[0.12em] text-zinc-400">Fato</span>
+                                        <textarea value={plan.fact} onChange={event => updatePlan(plan.id, { fact: event.target.value })} rows={4} placeholder="O que aconteceu, com evidência?" className="mt-2 w-full resize-none rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold leading-6 outline-none focus:border-[var(--retro-wine)]" />
+                                      </label>
+                                      <label className="block">
+                                        <span className="text-xs font-black uppercase tracking-[0.12em] text-zinc-400">Causa</span>
+                                        <textarea value={plan.cause} onChange={event => updatePlan(plan.id, { cause: event.target.value })} rows={4} placeholder="Por que isso aconteceu?" className="mt-2 w-full resize-none rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold leading-6 outline-none focus:border-[var(--retro-wine)]" />
+                                      </label>
+                                      <label className="block">
+                                        <span className="text-xs font-black uppercase tracking-[0.12em] text-zinc-400">Ação</span>
+                                        <textarea value={plan.action} onChange={event => updatePlan(plan.id, { action: event.target.value })} rows={4} placeholder="O que será feito?" className="mt-2 w-full resize-none rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold leading-6 outline-none focus:border-[var(--retro-wine)]" />
+                                      </label>
+                                    </div>
+
+                                    <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                                      <label className="block">
+                                        <span className="flex items-center gap-1 text-xs font-black uppercase tracking-[0.1em] text-zinc-400"><UserRound size={13} />Responsável</span>
+                                        <input value={plan.owner} onChange={event => updatePlan(plan.id, { owner: event.target.value })} className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-3 py-3 text-sm font-semibold outline-none focus:border-[var(--retro-wine)]" />
+                                      </label>
+                                      <label className="block">
+                                        <span className="text-xs font-black uppercase tracking-[0.1em] text-zinc-400">Status</span>
+                                        <select value={plan.status} onChange={event => updatePlan(plan.id, { status: event.target.value as ManagementPlanStatus })} className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-3 py-3 text-sm font-semibold outline-none focus:border-[var(--retro-wine)]">
+                                          {Object.entries(statusMeta).map(([value, meta]) => <option key={value} value={value}>{meta.label}</option>)}
+                                        </select>
+                                      </label>
+                                      <label className="block">
+                                        <span className="text-xs font-black uppercase tracking-[0.1em] text-zinc-400">Prazo</span>
+                                        <input type="date" value={plan.dueDate} onChange={event => updatePlan(plan.id, { dueDate: event.target.value })} className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-3 py-3 text-sm font-semibold outline-none focus:border-[var(--retro-wine)]" />
+                                      </label>
+                                      <label className="block">
+                                        <span className="flex items-center gap-1 text-xs font-black uppercase tracking-[0.1em] text-zinc-400"><CalendarCheck size={13} />Próximo check-in</span>
+                                        <input type="date" value={plan.nextCheckIn} onChange={event => updatePlan(plan.id, { nextCheckIn: event.target.value })} className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-3 py-3 text-sm font-semibold outline-none focus:border-[var(--retro-wine)]" />
+                                      </label>
+                                      <label className="block">
+                                        <span className="text-xs font-black uppercase tracking-[0.1em] text-zinc-400">Métrica de sucesso</span>
+                                        <input value={plan.successMetric} onChange={event => updatePlan(plan.id, { successMetric: event.target.value })} placeholder="Como saberemos?" className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-3 py-3 text-sm font-semibold outline-none focus:border-[var(--retro-wine)]" />
+                                      </label>
+                                    </div>
+
+                                    <label className="mt-3 block">
+                                      <span className="flex items-center gap-1 text-xs font-black uppercase tracking-[0.1em] text-zinc-400"><Clock3 size={13} />Última atualização / evidência</span>
+                                      <textarea value={plan.lastUpdate} onChange={event => updatePlan(plan.id, { lastUpdate: event.target.value })} rows={2} placeholder="O que mudou desde a última cobrança?" className="mt-2 w-full resize-none rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold leading-6 outline-none focus:border-[var(--retro-wine)]" />
+                                    </label>
+
+                                    <div className="mt-3 flex justify-end">
+                                      <button onClick={() => deletePlan(plan.id)} className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-black text-rose-600 hover:bg-rose-50">
+                                        <Trash2 size={14} />
+                                        Excluir FCA
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+                              </article>
+                            )
+                          })}
                         </div>
+                      )}
+                    </section>
+                  </div>
+                )}
 
-                        <label className="mt-3 block">
-                          <span className="flex items-center gap-1 text-xs font-black uppercase tracking-[0.1em] text-zinc-400"><Clock3 size={13} />Última atualização / evidência</span>
-                          <textarea value={plan.lastUpdate} onChange={event => updatePlan(plan.id, { lastUpdate: event.target.value })} rows={2} placeholder="O que mudou desde a última cobrança?" className="mt-2 w-full resize-none rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold leading-6 outline-none focus:border-[var(--retro-wine)]" />
-                        </label>
+                {tab.id === 'iniciativas' && (
+                  <div>
+                    <InitiativePortfolio />
+                  </div>
+                )}
 
-                        <div className="mt-3 flex justify-end">
-                          <button onClick={() => deletePlan(plan.id)} className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-black text-rose-600 hover:bg-rose-50">
-                            <Trash2 size={14} />
-                            Excluir FCA
+                {tab.id === 'temas' && (
+                  <div>
+                    <HotTopicRadar />
+                  </div>
+                )}
+
+                {tab.id === 'delegacao' && (
+                  <div>
+                    <DelegationBoard />
+
+                    <MonthlyClose plans={plans} snapshots={snapshots} currentMood={currentMood} moodCount={moodEntries.length} retroItemCount={items.filter(item => !isMoodItem(item)).length} />
+
+                    <section className="mt-4 rounded-[2rem] border border-black/5 bg-white/88 p-5 shadow-xl shadow-zinc-950/5 backdrop-blur-xl">
+                      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                        <div>
+                          <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--retro-wine)]">
+                            <BarChart3 size={14} />
+                            Histórico mensal
+                          </p>
+                          <h2 className="mt-2 text-2xl font-black">Mood, aprendizados e evolução</h2>
+                          <p className="mt-1 text-sm font-semibold text-zinc-400">Snapshots mensais para acompanhar sinais, temas e evolução da gestão.</p>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <input type="date" value={snapshotDate} onChange={event => setSnapshotDate(event.target.value)} className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold outline-none focus:border-[var(--retro-wine)]" />
+                          <button onClick={saveSnapshot} disabled={loading || !snapshotDate} className="inline-flex items-center gap-2 rounded-2xl bg-[var(--retro-wine)] px-4 py-3 text-sm font-black text-white disabled:opacity-40">
+                            {snapshotSaved ? <CheckCircle2 size={16} /> : <Save size={16} />}
+                            {snapshotSaved ? 'Snapshot salvo' : 'Salvar retro atual'}
                           </button>
                         </div>
                       </div>
-                    )}
-                  </article>
-                )
-              })}
-            </div>
-          )}
-        </section>
 
-        <DelegationBoard />
+                      {snapshots.length === 0 ? (
+                        <div className="mt-5 rounded-3xl border border-dashed border-zinc-300 bg-zinc-50 p-6 text-center text-sm font-semibold text-zinc-400">
+                          Nenhum snapshot salvo. Use a retro de 29/05 como primeiro marco do histórico.
+                        </div>
+                      ) : (
+                        <div className="mt-5 grid gap-3 lg:grid-cols-3">
+                          {snapshots.map((snapshot, index) => {
+                            const previous = snapshots[index - 1]
+                            const delta = previous ? snapshot.moodAverage - previous.moodAverage : 0
+                            return (
+                              <article key={snapshot.id} className="rounded-3xl border border-zinc-200 bg-zinc-50 p-4">
+                                <div className="flex items-start justify-between gap-3">
+                                  <div>
+                                    <p className="text-sm font-black text-zinc-900">{snapshot.title}</p>
+                                    <p className="mt-1 text-xs font-semibold text-zinc-400">{snapshot.itemCount} cards · {snapshot.openPlanCount} planos abertos</p>
+                                  </div>
+                                  <div className="rounded-2xl bg-white px-3 py-2 text-right shadow-sm">
+                                    <p className="text-xl font-black text-[var(--retro-wine)]">{snapshot.moodAverage ? snapshot.moodAverage.toFixed(1) : '—'}</p>
+                                    {previous && (
+                                      <p className={`mt-0.5 flex items-center justify-end text-xs font-semibold ${delta >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                        {delta >= 0 ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
+                                        {delta >= 0 ? '+' : ''}{delta.toFixed(1)}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="mt-4 flex flex-wrap gap-1.5">
+                                  {snapshot.themes.map(theme => <span key={theme} className="rounded-xl bg-white px-2.5 py-1 text-xs font-semibold text-zinc-500">{theme}</span>)}
+                                </div>
+                              </article>
+                            )
+                          })}
+                        </div>
+                      )}
 
-        <MonthlyClose plans={plans} snapshots={snapshots} currentMood={currentMood} moodCount={moodEntries.length} retroItemCount={items.filter(item => !isMoodItem(item)).length} />
-
-        <section className="mt-4 rounded-[2rem] border border-black/5 bg-white/88 p-5 shadow-xl shadow-zinc-950/5 backdrop-blur-xl">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-[var(--retro-wine)]">
-                <BarChart3 size={14} />
-                Histórico mensal
-              </p>
-              <h2 className="mt-2 text-2xl font-black">Mood, aprendizados e evolução</h2>
-              <p className="mt-1 text-sm font-semibold text-zinc-400">Snapshots mensais para acompanhar sinais, temas e evolução da gestão.</p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <input type="date" value={snapshotDate} onChange={event => setSnapshotDate(event.target.value)} className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold outline-none focus:border-[var(--retro-wine)]" />
-              <button onClick={saveSnapshot} disabled={loading || !snapshotDate} className="inline-flex items-center gap-2 rounded-2xl bg-[var(--retro-wine)] px-4 py-3 text-sm font-black text-white disabled:opacity-40">
-                {snapshotSaved ? <CheckCircle2 size={16} /> : <Save size={16} />}
-                {snapshotSaved ? 'Snapshot salvo' : 'Salvar retro atual'}
-              </button>
-            </div>
+                      {previousSnapshot && currentMood > 0 && (
+                        <p className={`mt-4 flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-black ${moodDelta >= 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
+                          {moodDelta >= 0 ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
+                          O mood atual está {Math.abs(moodDelta).toFixed(1)} ponto{Math.abs(moodDelta) !== 1 ? 's' : ''} {moodDelta >= 0 ? 'acima' : 'abaixo'} do último snapshot.
+                        </p>
+                      )}
+                    </section>
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
-
-          {snapshots.length === 0 ? (
-            <div className="mt-5 rounded-3xl border border-dashed border-zinc-300 bg-zinc-50 p-6 text-center text-sm font-semibold text-zinc-400">
-              Nenhum snapshot salvo. Use a retro de 29/05 como primeiro marco do histórico.
-            </div>
-          ) : (
-            <div className="mt-5 grid gap-3 lg:grid-cols-3">
-              {snapshots.map((snapshot, index) => {
-                const previous = snapshots[index - 1]
-                const delta = previous ? snapshot.moodAverage - previous.moodAverage : 0
-                return (
-                  <article key={snapshot.id} className="rounded-3xl border border-zinc-200 bg-zinc-50 p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-black text-zinc-900">{snapshot.title}</p>
-                        <p className="mt-1 text-xs font-semibold text-zinc-400">{snapshot.itemCount} cards · {snapshot.openPlanCount} planos abertos</p>
-                      </div>
-                      <div className="rounded-2xl bg-white px-3 py-2 text-right shadow-sm">
-                        <p className="text-xl font-black text-[var(--retro-wine)]">{snapshot.moodAverage ? snapshot.moodAverage.toFixed(1) : '—'}</p>
-                        {previous && (
-                          <p className={`mt-0.5 flex items-center justify-end text-[11px] font-black ${delta >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                            {delta >= 0 ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
-                            {delta >= 0 ? '+' : ''}{delta.toFixed(1)}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="mt-4 flex flex-wrap gap-1.5">
-                      {snapshot.themes.map(theme => <span key={theme} className="rounded-xl bg-white px-2.5 py-1 text-[11px] font-black text-zinc-500">{theme}</span>)}
-                    </div>
-                  </article>
-                )
-              })}
-            </div>
-          )}
-
-          {previousSnapshot && currentMood > 0 && (
-            <p className={`mt-4 flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-black ${moodDelta >= 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
-              {moodDelta >= 0 ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
-              O mood atual está {Math.abs(moodDelta).toFixed(1)} ponto{Math.abs(moodDelta) !== 1 ? 's' : ''} {moodDelta >= 0 ? 'acima' : 'abaixo'} do último snapshot.
-            </p>
-          )}
-        </section>
+        </div>
       </section>
     </main>
+  )
+}
+
+export default function ManagementPage() {
+  return (
+    <Suspense fallback={null}>
+      <ManagementContent />
+    </Suspense>
   )
 }

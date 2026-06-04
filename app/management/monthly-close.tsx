@@ -136,17 +136,17 @@ export default function MonthlyClose({
   }
 
   return (
-    <section className="mt-4 rounded-[2rem] border border-black/5 bg-white/88 p-5 shadow-xl shadow-zinc-950/5 backdrop-blur-xl">
+    <section aria-label="Fechamento mensal de gestão" className="mt-4 rounded-[2rem] border border-black/5 bg-white/88 p-5 shadow-xl shadow-zinc-950/5 backdrop-blur-xl">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-[var(--retro-wine)]"><CalendarCheck size={14} /> Fechamento Mensal de Gestão</p>
+          <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--retro-wine)]"><CalendarCheck size={14} /> Fechamento Mensal de Gestão</p>
           <h2 className="mt-2 text-2xl font-black">Consolidar o mês e preparar o próximo ciclo</h2>
           <p className="mt-1 text-sm font-semibold text-zinc-400">{progress}% das etapas concluídas.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <input type="month" value={draft.referenceMonth} onChange={event => update({ referenceMonth: event.target.value, steps: { ...draft.steps, referenceMonthSelected: Boolean(event.target.value) } })} className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-black text-zinc-600 outline-none" />
-          <button onClick={generateMinutes} className="inline-flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-black text-zinc-700"><ClipboardCopy size={14} /> Gerar ata gerencial do mês</button>
-          <button onClick={save} className="inline-flex items-center gap-2 rounded-xl bg-[var(--retro-wine)] px-3 py-2 text-xs font-black text-white">{saved ? <CheckCircle2 size={14} /> : <Save size={14} />}{saved ? 'Snapshot salvo' : 'Salvar fechamento'}</button>
+          <input type="month" value={draft.referenceMonth} onChange={event => update({ referenceMonth: event.target.value, steps: { ...draft.steps, referenceMonthSelected: Boolean(event.target.value) } })} className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-600 outline-none focus-visible:ring-2 focus-visible:ring-[var(--retro-wine)] focus-visible:ring-offset-1" />
+          <button onClick={generateMinutes} className="inline-flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-700"><ClipboardCopy size={14} /> Gerar ata gerencial do mês</button>
+          <button onClick={save} className="inline-flex items-center gap-2 rounded-xl bg-[var(--retro-wine)] px-3 py-2 text-xs font-semibold text-white">{saved ? <CheckCircle2 size={14} /> : <Save size={14} />}{saved ? 'Snapshot salvo' : 'Salvar fechamento'}</button>
         </div>
       </div>
 
@@ -154,7 +154,7 @@ export default function MonthlyClose({
         {monthlyCloseStepIds.map((step, index) => (
           <label key={step} className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-3 ${draft.steps[step] ? 'border-emerald-200 bg-emerald-50' : 'border-zinc-200 bg-white'}`}>
             <input type="checkbox" checked={draft.steps[step]} onChange={event => update({ steps: { ...draft.steps, [step]: event.target.checked } })} className="mt-0.5 accent-[var(--retro-wine)]" />
-            <span><strong className="block text-[10px] font-black text-zinc-400">0{index + 1}</strong><span className="mt-1 block text-xs font-black text-zinc-700">{monthlyCloseStepLabels[step]}</span></span>
+            <span><strong className="block text-[12px] font-semibold text-zinc-400">0{index + 1}</strong><span className="mt-1 block text-xs font-semibold text-zinc-700">{monthlyCloseStepLabels[step]}</span></span>
           </label>
         ))}
       </div>
@@ -170,12 +170,12 @@ export default function MonthlyClose({
         <CloseField label="Riscos para escalonar" value={draft.escalatedRisks} onChange={escalatedRisks => update({ escalatedRisks })} />
       </div>
 
-      <label className="mt-3 block"><span className="text-[10px] font-black uppercase tracking-[0.12em] text-zinc-400">Aprendizados do mês</span><textarea rows={3} value={listValue(draft.learnings)} onChange={event => update({ learnings: parseList(event.target.value), steps: { ...draft.steps, learningsRegistered: Boolean(event.target.value.trim()) } })} className="mt-1.5 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm font-semibold outline-none focus:border-[var(--retro-wine)]" placeholder="Um aprendizado por linha" /></label>
-      {draft.executiveMinutes && <label className="mt-3 block"><span className="text-[10px] font-black uppercase tracking-[0.12em] text-zinc-400">Ata gerencial copiável</span><textarea rows={12} readOnly value={draft.executiveMinutes} className="mt-1.5 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 font-mono text-xs leading-5 text-zinc-600 outline-none" /></label>}
+      <label className="mt-3 block"><span className="text-[12px] font-semibold uppercase tracking-[0.12em] text-zinc-400">Aprendizados do mês</span><textarea rows={3} value={listValue(draft.learnings)} onChange={event => update({ learnings: parseList(event.target.value), steps: { ...draft.steps, learningsRegistered: Boolean(event.target.value.trim()) } })} className="mt-1.5 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm font-semibold outline-none focus:border-[var(--retro-wine)] focus-visible:ring-2 focus-visible:ring-[var(--retro-wine)] focus-visible:ring-offset-1" placeholder="Um aprendizado por linha" /></label>
+      {draft.executiveMinutes && <label className="mt-3 block"><span className="text-[12px] font-semibold uppercase tracking-[0.12em] text-zinc-400">Ata gerencial copiável</span><textarea rows={12} readOnly value={draft.executiveMinutes} className="mt-1.5 w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 font-mono text-xs leading-5 text-zinc-600 outline-none" /></label>}
     </section>
   )
 }
 
 function CloseField({ label, value, onChange }: { label: string; value: string[]; onChange: (value: string[]) => void }) {
-  return <label><span className="text-[10px] font-black uppercase tracking-[0.12em] text-zinc-400">{label}</span><textarea rows={4} value={listValue(value)} onChange={event => onChange(parseList(event.target.value))} className="mt-1.5 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-xs font-semibold leading-5 outline-none focus:border-[var(--retro-wine)]" placeholder="Um item por linha" /></label>
+  return <label><span className="text-[12px] font-semibold uppercase tracking-[0.12em] text-zinc-400">{label}</span><textarea rows={4} value={listValue(value)} onChange={event => onChange(parseList(event.target.value))} className="mt-1.5 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-xs font-semibold leading-5 outline-none focus:border-[var(--retro-wine)] focus-visible:ring-2 focus-visible:ring-[var(--retro-wine)] focus-visible:ring-offset-1" placeholder="Um item por linha" /></label>
 }

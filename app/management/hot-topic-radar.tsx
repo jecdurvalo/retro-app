@@ -43,8 +43,8 @@ const impactLabels: Record<HotTopicImpact, string> = {
   team: 'Time',
 }
 
-const inputClass = 'mt-1.5 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm font-semibold outline-none focus:border-[var(--retro-wine)]'
-const labelClass = 'text-[10px] font-black uppercase tracking-[0.12em] text-zinc-400'
+const inputClass = 'mt-1.5 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm font-semibold outline-none focus:border-[var(--retro-wine)] focus-visible:ring-2 focus-visible:ring-[var(--retro-wine)] focus-visible:ring-offset-1'
+const labelClass = 'text-[12px] font-semibold uppercase tracking-[0.12em] text-zinc-400'
 const DAY_MS = 86_400_000
 
 function daysSince(value?: string) {
@@ -177,21 +177,21 @@ export default function HotTopicRadar() {
   }
 
   return (
-    <section className="mt-4 rounded-[2rem] border border-black/5 bg-white/88 p-5 shadow-xl shadow-zinc-950/5 backdrop-blur-xl">
+    <section aria-label="Radar de temas quentes" className="mt-4 rounded-[2rem] border border-black/5 bg-white/88 p-5 shadow-xl shadow-zinc-950/5 backdrop-blur-xl">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-[var(--retro-wine)]"><Flame size={14} /> Radar de temas quentes</p>
+          <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--retro-wine)]"><Flame size={14} /> Radar de temas quentes</p>
           <h2 className="mt-2 text-2xl font-black">O que não pode sair do radar da liderança</h2>
           <p className="mt-1 text-sm font-semibold text-zinc-400">Até 5 temas priorizados por temperatura e ausência de próximo movimento.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           {topics.length > 5 && (
-            <select aria-label="Abrir qualquer tema quente" value={expandedId || ''} onChange={event => setExpandedId(event.target.value || null)} className="rounded-2xl border border-zinc-200 bg-white px-3 py-3 text-xs font-black text-zinc-600 outline-none">
+            <select aria-label="Abrir qualquer tema quente" value={expandedId || ''} onChange={event => setExpandedId(event.target.value || null)} className="rounded-2xl border border-zinc-200 bg-white px-3 py-3 text-xs font-semibold text-zinc-600 outline-none focus-visible:ring-2 focus-visible:ring-[var(--retro-wine)] focus-visible:ring-offset-1">
               <option value="">Abrir tema ({topics.length} no total)</option>
               {topics.map(topic => <option key={topic.id} value={topic.id}>{topic.title}</option>)}
             </select>
           )}
-          <button onClick={addTopic} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-[var(--retro-wine)] px-4 py-3 text-sm font-black text-white"><Plus size={16} /> Novo tema quente</button>
+          <button onClick={addTopic} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-[var(--retro-wine)] px-4 py-3 text-sm font-semibold text-white"><Plus size={16} /> Novo tema quente</button>
         </div>
       </div>
 
@@ -208,14 +208,14 @@ export default function HotTopicRadar() {
                 setExpandedId(expanded ? null : topic.id)
               }} aria-expanded={expanded} className="w-full p-4 text-left">
                 <div className="flex items-start justify-between gap-2">
-                  <span className={`rounded-xl px-2.5 py-1 text-[10px] font-black ${temperatureMeta[topic.temperature].tone}`}>{temperatureMeta[topic.temperature].label}</span>
+                  <span className={`rounded-xl px-2.5 py-1 text-[12px] font-semibold ${temperatureMeta[topic.temperature].tone}`}>{temperatureMeta[topic.temperature].label}</span>
                   <ChevronDown size={16} className={`shrink-0 text-zinc-400 transition ${expanded ? 'rotate-180' : ''}`} />
                 </div>
-                <p className="mt-3 text-sm font-black leading-5 text-zinc-900">{topic.title}</p>
+                <p className="mt-3 text-sm font-semibold leading-5 text-zinc-900">{topic.title}</p>
                 <p className="mt-2 line-clamp-2 text-xs font-semibold leading-5 text-zinc-400">{topic.whyNow || topic.context}</p>
                 <div className="mt-3 flex flex-wrap gap-1">
-                  {signals.slice(0, 2).map(signal => <span key={signal} className="rounded-lg bg-rose-50 px-2 py-1 text-[9px] font-black text-rose-700">{signal}</span>)}
-                  {linked && <span className="rounded-lg bg-cyan-50 px-2 py-1 text-[9px] font-black text-cyan-700">Iniciativa conectada</span>}
+                  {signals.slice(0, 2).map(signal => <span key={signal} className="rounded-lg bg-rose-50 px-2 py-1 text-[12px] font-semibold text-rose-700">{signal}</span>)}
+                  {linked && <span className="rounded-lg bg-cyan-50 px-2 py-1 text-[12px] font-semibold text-cyan-700">Iniciativa conectada</span>}
                 </div>
               </button>
 
@@ -223,15 +223,15 @@ export default function HotTopicRadar() {
                 <div className="border-t border-zinc-100 bg-zinc-50/70 p-4">
                   <div className="grid gap-3 lg:grid-cols-3">
                     <div className="rounded-2xl border border-rose-100 bg-white p-4">
-                      <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.12em] text-rose-600"><AlertTriangle size={13} /> Esse tema exige atenção porque...</p>
+                      <p className="flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.12em] text-rose-600"><AlertTriangle size={13} /> Esse tema exige atenção porque...</p>
                       <p className="mt-2 text-sm font-semibold leading-6 text-zinc-600">{reading.reason}.</p>
                     </div>
                     <div className="rounded-2xl border border-cyan-100 bg-white p-4">
-                      <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.12em] text-cyan-700"><ArrowUpRight size={13} /> Próximo movimento recomendado...</p>
+                      <p className="flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.12em] text-cyan-700"><ArrowUpRight size={13} /> Próximo movimento recomendado...</p>
                       <p className="mt-2 text-sm font-semibold leading-6 text-zinc-600">{reading.movement}</p>
                     </div>
                     <div className="rounded-2xl border border-amber-100 bg-white p-4">
-                      <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.12em] text-amber-700"><ShieldAlert size={13} /> Risco se nada for feito...</p>
+                      <p className="flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.12em] text-amber-700"><ShieldAlert size={13} /> Risco se nada for feito...</p>
                       <p className="mt-2 text-sm font-semibold leading-6 text-zinc-600">{reading.risk}</p>
                     </div>
                   </div>
@@ -242,7 +242,7 @@ export default function HotTopicRadar() {
                     <label><span className={labelClass}>Dono da frente</span><input value={topic.owner} onChange={event => updateTopic(topic.id, { owner: event.target.value })} className={inputClass} /></label>
                     <label className="md:col-span-2"><span className={labelClass}>Contexto em 3 linhas</span><textarea rows={3} value={topic.context} onChange={event => updateTopic(topic.id, { context: event.target.value })} className={inputClass} /></label>
                     <label className="md:col-span-2"><span className={labelClass}>Por que importa agora</span><textarea rows={3} value={topic.whyNow} onChange={event => updateTopic(topic.id, { whyNow: event.target.value })} className={inputClass} /></label>
-                    <fieldset className="md:col-span-2"><legend className={labelClass}>Impacto potencial</legend><div className="mt-2 flex flex-wrap gap-2">{Object.entries(impactLabels).map(([value, label]) => <label key={value} className={`cursor-pointer rounded-xl border px-3 py-2 text-xs font-black ${topic.impacts.includes(value as HotTopicImpact) ? 'border-[var(--retro-wine)] bg-[rgba(135,0,47,0.06)] text-[var(--retro-wine)]' : 'border-zinc-200 bg-white text-zinc-500'}`}><input type="checkbox" className="sr-only" checked={topic.impacts.includes(value as HotTopicImpact)} onChange={() => updateTopic(topic.id, { impacts: topic.impacts.includes(value as HotTopicImpact) ? topic.impacts.filter(item => item !== value) : [...topic.impacts, value as HotTopicImpact] })} />{label}</label>)}</div></fieldset>
+                    <fieldset className="md:col-span-2"><legend className={labelClass}>Impacto potencial</legend><div className="mt-2 flex flex-wrap gap-2">{Object.entries(impactLabels).map(([value, label]) => <label key={value} className={`cursor-pointer rounded-xl border px-3 py-2 text-xs font-semibold ${topic.impacts.includes(value as HotTopicImpact) ? 'border-[var(--retro-wine)] bg-[rgba(135,0,47,0.06)] text-[var(--retro-wine)]' : 'border-zinc-200 bg-white text-zinc-500'}`}><input type="checkbox" className="sr-only" checked={topic.impacts.includes(value as HotTopicImpact)} onChange={() => updateTopic(topic.id, { impacts: topic.impacts.includes(value as HotTopicImpact) ? topic.impacts.filter(item => item !== value) : [...topic.impacts, value as HotTopicImpact] })} />{label}</label>)}</div></fieldset>
                     <label><span className={labelClass}>Stakeholders principais</span><input value={topic.stakeholders.join(', ')} onChange={event => updateTopic(topic.id, { stakeholders: event.target.value.split(',').map(value => value.trim()).filter(Boolean) })} className={inputClass} /></label>
                     <label><span className={labelClass}>Último update</span><input type="date" value={topic.lastUpdate.slice(0, 10)} onChange={event => updateTopic(topic.id, { lastUpdate: event.target.value })} className={inputClass} /></label>
                     <label className="md:col-span-2"><span className={labelClass}>Próxima ação</span><textarea rows={2} value={topic.nextAction} onChange={event => updateTopic(topic.id, { nextAction: event.target.value })} className={inputClass} /></label>
@@ -252,13 +252,13 @@ export default function HotTopicRadar() {
                   </div>
 
                   <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-zinc-200 bg-white p-3 sm:flex-row sm:items-center">
-                    <p className="flex shrink-0 items-center gap-2 text-xs font-black text-zinc-500"><Link2 size={14} /> Conexão com iniciativa</p>
-                    <select aria-label="Conectar tema a uma iniciativa" value={topic.initiativeId || ''} onChange={event => linkTopic(topic.id, event.target.value)} className="min-w-0 flex-1 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-bold text-zinc-600 outline-none">
+                    <p className="flex shrink-0 items-center gap-2 text-xs font-semibold text-zinc-500"><Link2 size={14} /> Conexão com iniciativa</p>
+                    <select aria-label="Conectar tema a uma iniciativa" value={topic.initiativeId || ''} onChange={event => linkTopic(topic.id, event.target.value)} className="min-w-0 flex-1 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-bold text-zinc-600 outline-none focus-visible:ring-2 focus-visible:ring-[var(--retro-wine)] focus-visible:ring-offset-1">
                       <option value="">Nenhuma iniciativa conectada</option>
                       {initiatives.map(initiative => <option key={initiative.id} value={initiative.id}>{initiative.title}</option>)}
                     </select>
-                    <button onClick={() => transformTopic(topic)} disabled={Boolean(topic.initiativeId)} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-zinc-900 px-3 py-2 text-xs font-black text-white disabled:opacity-35"><BellRing size={13} /> Transformar em iniciativa</button>
-                    <button onClick={() => setTopics(current => current.filter(item => item.id !== topic.id))} className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-black text-rose-600"><Trash2 size={13} /> Excluir</button>
+                    <button onClick={() => transformTopic(topic)} disabled={Boolean(topic.initiativeId)} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-zinc-900 px-3 py-2 text-xs font-semibold text-white disabled:opacity-35"><BellRing size={13} /> Transformar em iniciativa</button>
+                    <button onClick={() => setTopics(current => current.filter(item => item.id !== topic.id))} className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold text-rose-600"><Trash2 size={13} /> Excluir</button>
                   </div>
                 </div>
               )}

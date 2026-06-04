@@ -68,18 +68,18 @@ export default function ManagementCopilot({ plans, snapshots, currentMood }: { p
   }
 
   return (
-    <section className="mt-4 rounded-[2rem] border border-black/5 bg-white/88 p-5 shadow-xl shadow-zinc-950/5 backdrop-blur-xl">
+    <section aria-label="Copiloto de gestão" className="mt-4 rounded-[2rem] border border-black/5 bg-white/88 p-5 shadow-xl shadow-zinc-950/5 backdrop-blur-xl">
       <div>
-        <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-[var(--retro-wine)]"><Bot size={14} /> Copiloto de Gestão</p>
+        <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--retro-wine)]"><Bot size={14} /> Copiloto de Gestão</p>
         <h2 className="mt-2 text-2xl font-black">Perguntas práticas sobre a gestão atual</h2>
         <p className="mt-1 text-sm font-semibold text-zinc-400">Respostas baseadas somente nos dados cadastrados no Retro Sync.</p>
       </div>
-      <div className="mt-4 flex flex-wrap gap-2">{suggestions.map(item => <button key={item} onClick={() => setQuestion(item)} className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-[11px] font-black text-zinc-500">{item}</button>)}</div>
+      <div className="mt-4 flex flex-wrap gap-2">{suggestions.map(item => <button key={item} onClick={() => setQuestion(item)} className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-500">{item}</button>)}</div>
       <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-        <input value={question} onChange={event => setQuestion(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') ask() }} maxLength={500} className="min-w-0 flex-1 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold outline-none focus:border-[var(--retro-wine)]" placeholder="Faça uma pergunta de gestão..." />
-        <button onClick={ask} disabled={loading || !question.trim()} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[var(--retro-wine)] px-4 py-3 text-sm font-black text-white disabled:opacity-40"><Send size={15} />{loading ? 'Analisando...' : 'Perguntar'}</button>
+        <input value={question} onChange={event => setQuestion(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') ask() }} maxLength={500} className="min-w-0 flex-1 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold outline-none focus:border-[var(--retro-wine)] focus-visible:ring-2 focus-visible:ring-[var(--retro-wine)] focus-visible:ring-offset-1" placeholder="Faça uma pergunta de gestão..." />
+        <button onClick={ask} disabled={loading || !question.trim()} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[var(--retro-wine)] px-4 py-3 text-sm font-semibold text-white disabled:opacity-40"><Send size={15} />{loading ? 'Analisando...' : 'Perguntar'}</button>
       </div>
-      {error && <p className="mt-3 rounded-xl bg-amber-50 px-4 py-3 text-xs font-black text-amber-800">{error}</p>}
+      {error && <p className="mt-3 rounded-xl bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-800">{error}</p>}
       {answer && (
         <div className="mt-4 grid gap-3 lg:grid-cols-2" aria-live="polite">
           <AnswerBlock title="1. Diagnóstico" text={answer.diagnosis} />
@@ -95,5 +95,5 @@ export default function ManagementCopilot({ plans, snapshots, currentMood }: { p
 }
 
 function AnswerBlock({ title, text }: { title: string; text: string }) {
-  return <article className="rounded-2xl border border-zinc-200 bg-white p-4"><p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.12em] text-[var(--retro-wine)]"><Sparkles size={12} />{title}</p><p className="mt-2 whitespace-pre-line text-sm font-semibold leading-6 text-zinc-600">{text}</p></article>
+  return <article className="rounded-2xl border border-zinc-200 bg-white p-4"><p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--retro-wine)]"><Sparkles size={12} />{title}</p><p className="mt-2 whitespace-pre-line text-sm font-semibold leading-6 text-zinc-600">{text}</p></article>
 }

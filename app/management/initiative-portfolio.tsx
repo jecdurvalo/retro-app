@@ -52,9 +52,9 @@ const typeLabels: Record<InitiativeType, string> = {
 }
 
 const activeStatuses: InitiativeStatus[] = ['not_started', 'in_progress', 'at_risk', 'blocked']
-const filterClass = 'rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-bold text-zinc-600 outline-none focus:border-[var(--retro-wine)]'
-const inputClass = 'mt-1.5 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm font-semibold outline-none focus:border-[var(--retro-wine)]'
-const labelClass = 'text-[10px] font-black uppercase tracking-[0.12em] text-zinc-400'
+const filterClass = 'rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-bold text-zinc-600 outline-none focus:border-[var(--retro-wine)] focus-visible:ring-2 focus-visible:ring-[var(--retro-wine)] focus-visible:ring-offset-1'
+const inputClass = 'mt-1.5 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm font-semibold outline-none focus:border-[var(--retro-wine)] focus-visible:ring-2 focus-visible:ring-[var(--retro-wine)] focus-visible:ring-offset-1'
+const labelClass = 'text-[12px] font-semibold uppercase tracking-[0.12em] text-zinc-400'
 
 function formatDate(value: string) {
   if (!value) return 'Sem data'
@@ -67,11 +67,11 @@ function PortfolioMetric({ icon: Icon, label, value, detail, tone }: { icon: typ
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-2xl font-black text-zinc-900">{value}</p>
-          <p className="mt-1 text-xs font-black text-zinc-700">{label}</p>
+          <p className="mt-1 text-xs font-semibold text-zinc-700">{label}</p>
         </div>
         <span className={`grid h-9 w-9 place-items-center rounded-xl ${tone}`}><Icon size={16} /></span>
       </div>
-      <p className="mt-3 text-[11px] font-semibold text-zinc-400">{detail}</p>
+      <p className="mt-3 text-xs font-semibold text-zinc-400">{detail}</p>
     </article>
   )
 }
@@ -163,17 +163,17 @@ export default function InitiativePortfolio() {
   }
 
   return (
-    <section className="mt-4 rounded-[2rem] border border-black/5 bg-white/88 p-5 shadow-xl shadow-zinc-950/5 backdrop-blur-xl">
+    <section aria-label="Carteira de iniciativas" className="mt-4 rounded-[2rem] border border-black/5 bg-white/88 p-5 shadow-xl shadow-zinc-950/5 backdrop-blur-xl">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-[var(--retro-wine)]">
+          <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--retro-wine)]">
             <BriefcaseBusiness size={14} />
             Carteira de iniciativas
           </p>
           <h2 className="mt-2 text-2xl font-black">Visão executiva das frentes prioritárias</h2>
           <p className="mt-1 max-w-2xl text-sm font-semibold text-zinc-400">Projetos, temas e riscos que precisam de acompanhamento na reunião semanal.</p>
         </div>
-        <button onClick={addInitiative} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-[var(--retro-wine)] px-4 py-3 text-sm font-black text-white shadow-lg shadow-[rgba(135,0,47,0.18)]">
+        <button onClick={addInitiative} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-[var(--retro-wine)] px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-[rgba(135,0,47,0.18)]">
           <Plus size={16} />
           Nova iniciativa
         </button>
@@ -189,7 +189,7 @@ export default function InitiativePortfolio() {
 
       <div className="mt-5 grid gap-4 xl:grid-cols-[0.9fr_2.1fr]">
         <aside className="rounded-3xl bg-[var(--retro-wine)] p-5 text-white">
-          <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.16em] text-white/55">
+          <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-white/55">
             <Flag size={14} />
             Onde a liderança precisa atuar agora
           </p>
@@ -199,11 +199,11 @@ export default function InitiativePortfolio() {
             ) : leadershipItems.map(({ item, reasons }) => (
               <button key={item.id} onClick={() => setExpandedId(item.id)} aria-expanded={expandedId === item.id} className="block w-full rounded-2xl bg-white/[0.09] p-3 text-left transition hover:bg-white/[0.14]">
                 <div className="flex items-start justify-between gap-3">
-                  <p className="text-sm font-black leading-5">{item.title}</p>
+                  <p className="text-sm font-semibold leading-5">{item.title}</p>
                   <ChevronDown size={15} className="mt-0.5 shrink-0 -rotate-90 text-white/45" />
                 </div>
                 <div className="mt-2 flex flex-wrap gap-1">
-                  {reasons.map(reason => <span key={reason} className="rounded-lg bg-white/10 px-2 py-1 text-[10px] font-black text-white/65">{reason}</span>)}
+                  {reasons.map(reason => <span key={reason} className="rounded-lg bg-white/10 px-2 py-1 text-[12px] font-semibold text-white/65">{reason}</span>)}
                 </div>
               </button>
             ))}
@@ -212,7 +212,7 @@ export default function InitiativePortfolio() {
 
         <div className="min-w-0">
           <div className="flex flex-col gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-3 lg:flex-row lg:items-center">
-            <p className="flex shrink-0 items-center gap-2 text-xs font-black text-zinc-500"><Filter size={14} /> Filtros</p>
+            <p className="flex shrink-0 items-center gap-2 text-xs font-semibold text-zinc-500"><Filter size={14} /> Filtros</p>
             <div className="grid flex-1 grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
               <select aria-label="Filtrar por status" value={filters.status} onChange={event => setFilters(current => ({ ...current, status: event.target.value }))} className={filterClass}>
                 <option value="">Status</option>
@@ -235,11 +235,11 @@ export default function InitiativePortfolio() {
                 {areaOptions.map(value => <option key={value}>{value}</option>)}
               </select>
             </div>
-            {Object.values(filters).some(Boolean) && <button onClick={() => setFilters({ status: '', criticality: '', owner: '', type: '', area: '' })} className="shrink-0 text-xs font-black text-[var(--retro-wine)]">Limpar</button>}
+            {Object.values(filters).some(Boolean) && <button onClick={() => setFilters({ status: '', criticality: '', owner: '', type: '', area: '' })} className="shrink-0 text-xs font-semibold text-[var(--retro-wine)]">Limpar</button>}
           </div>
 
           <div className="mt-3 overflow-hidden rounded-2xl border border-zinc-200">
-            <div className="hidden grid-cols-[minmax(260px,1fr)_130px_120px_130px_36px] gap-3 bg-zinc-50 px-4 py-3 text-[10px] font-black uppercase tracking-[0.12em] text-zinc-400 lg:grid">
+            <div className="hidden grid-cols-[minmax(260px,1fr)_130px_120px_130px_36px] gap-3 bg-zinc-50 px-4 py-3 text-[12px] font-semibold uppercase tracking-[0.12em] text-zinc-400 lg:grid">
               <span>Iniciativa</span><span>Dono / área</span><span>Próximo marco</span><span>Status</span><span />
             </div>
             {filtered.length === 0 ? (
@@ -251,15 +251,15 @@ export default function InitiativePortfolio() {
                   <button onClick={() => setExpandedId(expanded ? null : item.id)} aria-expanded={expanded} className="grid w-full gap-3 p-4 text-left lg:grid-cols-[minmax(260px,1fr)_130px_120px_130px_36px] lg:items-center">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <span className={`rounded-lg px-2 py-1 text-[10px] font-black ring-1 ring-inset ${criticalityMeta[item.criticality].tone}`}>{criticalityMeta[item.criticality].label}</span>
-                        <span className="rounded-lg bg-zinc-100 px-2 py-1 text-[10px] font-black text-zinc-500">{typeLabels[item.type]}</span>
+                        <span className={`rounded-lg px-2 py-1 text-[12px] font-semibold ring-1 ring-inset ${criticalityMeta[item.criticality].tone}`}>{criticalityMeta[item.criticality].label}</span>
+                        <span className="rounded-lg bg-zinc-100 px-2 py-1 text-[12px] font-semibold text-zinc-500">{typeLabels[item.type]}</span>
                       </div>
-                      <p className="mt-2 truncate text-sm font-black text-zinc-900">{item.title}</p>
+                      <p className="mt-2 truncate text-sm font-semibold text-zinc-900">{item.title}</p>
                       <p className="mt-1 truncate text-xs font-semibold text-zinc-400">{item.nextStep || 'Próximo passo não definido'}</p>
                     </div>
-                    <div><p className="text-xs font-black text-zinc-700">{item.owner || 'Sem dono'}</p><p className="mt-1 text-[11px] font-semibold text-zinc-400">{item.area || 'Sem área'}</p></div>
-                    <div><p className="truncate text-xs font-black text-zinc-700">{item.nextMilestone || 'Sem marco'}</p><p className="mt-1 text-[11px] font-semibold text-zinc-400">Alvo {formatDate(item.targetDate)}</p></div>
-                    <span className={`inline-flex w-fit items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-[11px] font-black ${statusMeta[item.status].tone}`}><span className={`h-1.5 w-1.5 rounded-full ${statusMeta[item.status].dot}`} />{statusMeta[item.status].label}</span>
+                    <div><p className="text-xs font-semibold text-zinc-700">{item.owner || 'Sem dono'}</p><p className="mt-1 text-xs font-semibold text-zinc-400">{item.area || 'Sem área'}</p></div>
+                    <div><p className="truncate text-xs font-semibold text-zinc-700">{item.nextMilestone || 'Sem marco'}</p><p className="mt-1 text-xs font-semibold text-zinc-400">Alvo {formatDate(item.targetDate)}</p></div>
+                    <span className={`inline-flex w-fit items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-xs font-semibold ${statusMeta[item.status].tone}`}><span className={`h-1.5 w-1.5 rounded-full ${statusMeta[item.status].dot}`} />{statusMeta[item.status].label}</span>
                     <ChevronDown size={16} className={`text-zinc-400 transition ${expanded ? 'rotate-180' : ''}`} />
                   </button>
 
@@ -284,8 +284,8 @@ export default function InitiativePortfolio() {
                         <label className="md:col-span-2"><span className={labelClass}>Link com FCA ou retro de origem</span><div className="relative"><Link2 className="absolute left-3 top-4 text-zinc-400" size={14} /><input type="url" value={item.sourceLink} onChange={event => updateInitiative(item.id, { sourceLink: event.target.value })} placeholder="https://..." className={`${inputClass} pl-9`} /></div></label>
                       </div>
                       <div className="mt-3 flex items-center justify-between gap-3">
-                        <p className="flex items-center gap-1.5 text-[11px] font-semibold text-zinc-400"><CalendarDays size={13} /> Atualizada em {new Date(item.updatedAt).toLocaleDateString('pt-BR')}</p>
-                        <button onClick={() => removeInitiative(item.id)} className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-black text-rose-600 hover:bg-rose-50"><Trash2 size={13} /> Excluir</button>
+                        <p className="flex items-center gap-1.5 text-xs font-semibold text-zinc-400"><CalendarDays size={13} /> Atualizada em {new Date(item.updatedAt).toLocaleDateString('pt-BR')}</p>
+                        <button onClick={() => removeInitiative(item.id)} className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50"><Trash2 size={13} /> Excluir</button>
                       </div>
                     </div>
                   )}
