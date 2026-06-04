@@ -14,7 +14,8 @@ import {
 import { loadDelegationItems, type DelegationItem } from '@/lib/delegation'
 import { loadHotTopics, type HotTopic } from '@/lib/hot-topics'
 import { loadInitiatives, type Initiative } from '@/lib/initiatives'
-import { getFcaCompleteness, isOverdue, type ManagementPlan } from '@/lib/management'
+import { isOverdue, type ManagementPlan } from '@/lib/management'
+import { calculateManagementQuality } from '@/lib/management-quality'
 
 type ActionItem = {
   id: string
@@ -60,13 +61,13 @@ export default function CockpitOverview({ plans }: { plans: ManagementPlan[] }) 
   const riskInitiatives = initiatives.filter(item => item.status === 'at_risk' || item.status === 'blocked')
   const hotAttention = hotTopics.filter(item => item.temperature === 'critical' || item.temperature === 'attention')
   const lateDelegations = delegations.filter(item => !item.nextCheckIn || item.nextCheckIn < new Date().toISOString().slice(0, 10))
-  const managementQuality = useMemo(() => {
-    const planQuality = plans.length ? plans.reduce((sum, plan) => sum + getFcaCompleteness(plan), 0) / plans.length : 100
-    const initiativeQuality = initiatives.length ? (initiatives.filter(item => item.owner.trim() && item.nextStep.trim()).length / initiatives.length) * 100 : 100
-    const delegationQuality = delegations.length ? (delegations.filter(item => item.responsible.trim() && item.successCriteria.trim()).length / delegations.length) * 100 : 100
-    const hotTopicQuality = hotTopics.length ? (hotTopics.filter(item => item.owner.trim() && item.nextAction.trim()).length / hotTopics.length) * 100 : 100
-    return Math.round((planQuality + initiativeQuality + delegationQuality + hotTopicQuality) / 4)
-  }, [delegations, hotTopics, initiatives, plans])
+  const managementQuality = useMemo(() => calculateManagementQuality(
+    plans,
+    initiatives,
+    hotTopics,
+    delegations,
+    typeof window === 'undefined' ? '' : window.localStorage.getItem('retro-delegation-manager') || 'Marina Costa',
+  ).score, [delegations, hotTopics, initiatives, plans])
 
   const actions = useMemo(() => {
     const result: ActionItem[] = []

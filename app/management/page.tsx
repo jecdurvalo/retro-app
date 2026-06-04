@@ -38,6 +38,7 @@ import CockpitOverview from './cockpit-overview'
 import DelegationBoard from './delegation-board'
 import HotTopicRadar from './hot-topic-radar'
 import InitiativePortfolio from './initiative-portfolio'
+import ManagementQuality from './management-quality'
 
 const PLAN_STORAGE_KEY = `retro-action-plans:${SESSION_ID}`
 const CARD_GROUP_STORAGE_KEY = `retro-card-groups:${SESSION_ID}`
@@ -293,6 +294,8 @@ export default function ManagementPage() {
         </header>
 
         <CockpitOverview plans={plans} />
+
+        <ManagementQuality plans={plans} />
 
         <HotTopicRadar />
 
