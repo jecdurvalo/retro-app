@@ -8,6 +8,7 @@ import {
   X,
   Archive,
   Check,
+  Trash2,
 } from 'lucide-react'
 import {
   createEmptyFront,
@@ -176,7 +177,7 @@ function FcaForm({ onCancel, onSave }: { onCancel: () => void; onSave: (fca: FCA
 
 // ─── FCA Item ─────────────────────────────────────────────────────────────────
 
-function FcaItem({ fca, onStatusChange }: { fca: FCA; onStatusChange: (status: FCA['status']) => void }) {
+function FcaItem({ fca, onStatusChange, onDelete }: { fca: FCA; onStatusChange: (status: FCA['status']) => void; onDelete: () => void }) {
   const [expanded, setExpanded] = useState(false)
 
   return (
@@ -221,6 +222,13 @@ function FcaItem({ fca, onStatusChange }: { fca: FCA; onStatusChange: (status: F
                 >
                   {fcaStatuses.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
+                <button
+                  type="button"
+                  onClick={onDelete}
+                  className="ml-auto flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-bold text-rose-500 hover:bg-rose-50"
+                >
+                  <Trash2 size={12} /> Excluir FCA
+                </button>
               </div>
             </div>
           )}
@@ -232,10 +240,10 @@ function FcaItem({ fca, onStatusChange }: { fca: FCA; onStatusChange: (status: F
 
 // ─── Task Row ─────────────────────────────────────────────────────────────────
 
-function TaskRow({ task, onChange }: { task: Task; onChange: (updated: Task) => void }) {
+function TaskRow({ task, onChange, onDelete }: { task: Task; onChange: (updated: Task) => void; onDelete: () => void }) {
   const done = task.status === 'Concluída'
   return (
-    <div className="flex items-center gap-2 py-1.5">
+    <div className="flex items-center gap-2 py-1.5 group">
       <button
         type="button"
         aria-label={done ? 'Marcar como aberta' : 'Marcar como concluída'}
@@ -254,6 +262,14 @@ function TaskRow({ task, onChange }: { task: Task; onChange: (updated: Task) => 
       >
         {taskStatuses.map(s => <option key={s} value={s}>{s}</option>)}
       </select>
+      <button
+        type="button"
+        aria-label="Excluir task"
+        onClick={onDelete}
+        className="shrink-0 text-zinc-300 opacity-0 group-hover:opacity-100 hover:text-rose-500 transition"
+      >
+        <Trash2 size={13} />
+      </button>
     </div>
   )
 }
@@ -310,6 +326,7 @@ function FrontCard({
   onArchive,
   onAddTask,
   onUpdateTask,
+  onDeleteTask,
 }: {
   front: ManagementFront
   tasks: Task[]
@@ -317,6 +334,7 @@ function FrontCard({
   onArchive: (f: ManagementFront) => void
   onAddTask: (t: Task) => void
   onUpdateTask: (t: Task) => void
+  onDeleteTask: (id: string) => void
 }) {
   const [expanded, setExpanded] = useState(false)
   const [showFcaForm, setShowFcaForm] = useState(false)
@@ -441,7 +459,7 @@ function FrontCard({
             {(front.fcas ?? []).length > 0 && (
               <div className="mt-2 grid gap-2">
                 {(front.fcas ?? []).map(fca => (
-                  <FcaItem key={fca.id} fca={fca} onStatusChange={status => updateFcaStatus(fca.id, status)} />
+                  <FcaItem key={fca.id} fca={fca} onStatusChange={status => updateFcaStatus(fca.id, status)} onDelete={() => onUpdateFront({ ...front, fcas: (front.fcas ?? []).filter(f => f.id !== fca.id), updatedAt: new Date().toISOString() })} />
                 ))}
               </div>
             )}
@@ -457,7 +475,7 @@ function FrontCard({
             {frontTasks.length > 0 && (
               <div className="mt-2 divide-y divide-zinc-50">
                 {frontTasks.map(task => (
-                  <TaskRow key={task.id} task={task} onChange={onUpdateTask} />
+                  <TaskRow key={task.id} task={task} onChange={onUpdateTask} onDelete={() => onDeleteTask(task.id)} />
                 ))}
               </div>
             )}
@@ -529,6 +547,10 @@ export default function FrentesPage() {
     persistTasks(tasks.map(t => t.id === updated.id ? updated : t))
   }
 
+  const deleteTask = (id: string) => {
+    persistTasks(tasks.filter(t => t.id !== id))
+  }
+
   const activeFronts = useMemo(() => fronts.filter(f => f.status !== 'Arquivada'), [fronts])
 
   const leaderFronts = useMemo(
@@ -584,6 +606,7 @@ export default function FrentesPage() {
                   onArchive={archiveFront}
                   onAddTask={addTask}
                   onUpdateTask={updateTask}
+                  onDeleteTask={deleteTask}
                 />
               ))}
             </div>
@@ -604,6 +627,7 @@ export default function FrentesPage() {
                   onArchive={archiveFront}
                   onAddTask={addTask}
                   onUpdateTask={updateTask}
+                  onDeleteTask={deleteTask}
                 />
               ))}
             </div>

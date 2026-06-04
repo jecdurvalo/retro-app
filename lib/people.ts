@@ -23,6 +23,7 @@ export type LeadershipPerson = {
   role: string
   relationship: 'Liderado direto' | 'Time negócios'
   moment: string
+  nextLeap: string
   frontIds: string[]
   nextOneOnOne: string
   attention: AttentionType
@@ -41,6 +42,7 @@ export function createEmptyPerson(overrides: Partial<LeadershipPerson> = {}): Le
     role: '',
     relationship: 'Liderado direto',
     moment: '',
+    nextLeap: '',
     frontIds: [],
     nextOneOnOne: '',
     attention: 'Desenvolver',

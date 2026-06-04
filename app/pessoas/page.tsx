@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import {
   ChevronDown,
   ChevronRight,
   Plus,
+  Trash2,
   X,
   UserRound,
 } from 'lucide-react'
@@ -106,9 +107,11 @@ type Tab = 'geral' | 'pdi' | 'notas' | 'feedback'
 function PersonCard({
   person,
   onChange,
+  onDelete,
 }: {
   person: LeadershipPerson
   onChange: (updated: LeadershipPerson) => void
+  onDelete: (id: string) => void
 }) {
   const [open, setOpen] = useState(false)
   const [tab, setTab] = useState<Tab>('geral')
@@ -306,7 +309,7 @@ function PersonCard({
 
                 <label className="grid gap-1.5 text-xs font-bold text-zinc-500">
                   Próximo salto
-                  <textarea rows={2} placeholder="Qual é a próxima evolução esperada?" className={fieldClass} {...field('moment')} />
+                  <textarea rows={2} placeholder="Qual é a próxima evolução esperada?" className={fieldClass} {...field('nextLeap')} />
                 </label>
 
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -448,6 +451,16 @@ function PersonCard({
                 </div>
               </div>
             )}
+
+            <div className="mt-4 flex justify-end border-t border-zinc-100 pt-4">
+              <button
+                type="button"
+                onClick={() => onDelete(person.id)}
+                className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50"
+              >
+                <Trash2 size={13} /> Remover pessoa
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -529,17 +542,19 @@ function Section({
   title,
   people,
   onChangePerson,
+  onDeletePerson,
 }: {
   title: string
   people: LeadershipPerson[]
   onChangePerson: (updated: LeadershipPerson) => void
+  onDeletePerson: (id: string) => void
 }) {
   if (people.length === 0) return null
   return (
     <section className="grid gap-3">
       <h2 className="text-sm font-black uppercase tracking-[0.12em] text-zinc-500">{title}</h2>
       {people.map(person => (
-        <PersonCard key={person.id} person={person} onChange={onChangePerson} />
+        <PersonCard key={person.id} person={person} onChange={onChangePerson} onDelete={onDeletePerson} />
       ))}
     </section>
   )
@@ -548,8 +563,12 @@ function Section({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function PessoasPage() {
-  const [people, setPeople] = useState<LeadershipPerson[]>(loadPeople)
+  const [people, setPeople] = useState<LeadershipPerson[]>([])
   const [showAddForm, setShowAddForm] = useState(false)
+
+  useEffect(() => {
+    setPeople(loadPeople())
+  }, [])
 
   function addPerson(p: LeadershipPerson) {
     const next = [...people, p]
@@ -560,6 +579,13 @@ export default function PessoasPage() {
 
   function updatePerson(updated: LeadershipPerson) {
     const next = people.map(p => (p.id === updated.id ? updated : p))
+    setPeople(next)
+    savePeople(next)
+  }
+
+  function deletePerson(id: string) {
+    if (!window.confirm('Remover esta pessoa?')) return
+    const next = people.filter(p => p.id !== id)
     setPeople(next)
     savePeople(next)
   }
@@ -613,8 +639,8 @@ export default function PessoasPage() {
         {/* Sections */}
         {people.length > 0 && (
           <div className="mt-7 grid gap-8">
-            <Section title="Liderados diretos" people={diretos} onChangePerson={updatePerson} />
-            <Section title="Time negócios" people={negocios} onChangePerson={updatePerson} />
+            <Section title="Liderados diretos" people={diretos} onChangePerson={updatePerson} onDeletePerson={deletePerson} />
+            <Section title="Time negócios" people={negocios} onChangePerson={updatePerson} onDeletePerson={deletePerson} />
           </div>
         )}
       </div>
