@@ -120,7 +120,8 @@ export default function CockpitOverview({ plans }: { plans: ManagementPlan[] }) 
             </article>
           )) : (
             <p className="col-span-full rounded-2xl bg-emerald-50 p-5 text-sm font-semibold text-emerald-700"><CheckCircle2 className="mr-2 inline" size={16} /> Nenhum item prioritário identificado.</p>
-          )}
+          )
+          }
         </div>
       </section>
     </>
