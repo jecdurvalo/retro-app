@@ -101,46 +101,46 @@ export default function HojePage() {
   }
 
   return (
-    <main className="min-h-screen bg-[var(--retro-bg)] px-4 py-7 text-[var(--retro-ink)] sm:px-7 lg:px-9 lg:py-9">
-      <div className="mx-auto max-w-[1200px] space-y-7">
+    <main className="min-h-screen bg-[var(--bg-secondary)] px-4 py-6 text-[var(--text-primary)] sm:px-6 lg:px-8 lg:py-8">
+      <div className="mx-auto max-w-[1200px] space-y-6">
 
         {/* Header */}
         <header>
-          <h1 className="text-3xl font-black tracking-tight sm:text-4xl">
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
             {todayGreeting()}, Joana
           </h1>
-          <p className="mt-1 text-sm font-medium capitalize text-zinc-500">{formattedToday()}</p>
+          <p className="mt-1 text-sm font-medium capitalize text-[var(--text-secondary)]">{formattedToday()}</p>
         </header>
 
-        <div className="grid gap-5 xl:grid-cols-[1fr_380px]">
+        <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
           <div className="space-y-5">
 
             {/* ── Atenção agora ── */}
-            <section className="rounded-3xl border border-black/5 bg-white p-5 shadow-sm shadow-zinc-950/5 sm:p-6">
+            <section className="rounded-2xl border border-[var(--border-medium)] bg-[var(--bg-primary)] p-5 shadow-[var(--shadow-sm)]">
               <div className="flex items-center gap-2 mb-4">
-                <AlertTriangle size={18} className="text-rose-500" />
-                <h2 className="text-base font-black uppercase tracking-[0.1em] text-zinc-400">Atenção agora</h2>
+                <AlertTriangle size={18} className="text-[var(--critical-text)]" />
+                <h2 className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--text-tertiary)]">Atenção agora</h2>
               </div>
               {urgentFronts.length === 0 ? (
-                <p className="text-sm text-zinc-400">Nenhuma frente em atenção ou crítica no momento.</p>
+                <p className="text-sm text-[var(--text-tertiary)]">Nenhuma frente em atenção ou crítica no momento.</p>
               ) : (
-                <ul className="space-y-3">
+                <ul className="space-y-2.5">
                   {urgentFronts.map(front => (
                     <li key={front.id}>
                       <Link
                         href="/frentes"
-                        className="flex items-start gap-3 rounded-2xl border border-zinc-100 p-3.5 transition hover:bg-zinc-50"
+                        className="flex items-start gap-3 rounded-xl border border-[var(--border-light)] p-3.5 transition hover:bg-[var(--bg-secondary)] hover:border-[var(--border-medium)]"
                       >
-                        <span className={`mt-0.5 h-2.5 w-2.5 shrink-0 rounded-full ${temperatureDot[front.temperature] ?? 'bg-zinc-400'}`} />
+                        <span className={`mt-0.5 h-2.5 w-2.5 shrink-0 rounded-full ${temperatureDot[front.temperature] ?? 'bg-[var(--text-tertiary)]'}`} />
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className="font-black text-zinc-900">{front.name}</span>
-                            <span className={`rounded-full border px-2.5 py-0.5 text-xs font-bold ${temperatureStyle[front.temperature] ?? ''}`}>
+                            <span className="font-semibold text-[var(--text-primary)]">{front.name}</span>
+                            <span className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${temperatureStyle[front.temperature] ?? ''}`}>
                               {front.temperature}
                             </span>
                           </div>
                           {(front.nextStep || front.description) && (
-                            <p className="mt-1 text-xs leading-5 text-zinc-500 line-clamp-2">
+                            <p className="mt-1 text-xs leading-5 text-[var(--text-secondary)] line-clamp-2">
                               {front.nextStep || front.description}
                             </p>
                           )}
@@ -153,39 +153,39 @@ export default function HojePage() {
             </section>
 
             {/* ── Minhas tasks ── */}
-            <section className="rounded-3xl border border-black/5 bg-white p-5 shadow-sm shadow-zinc-950/5 sm:p-6">
+            <section className="rounded-2xl border border-[var(--border-medium)] bg-[var(--bg-primary)] p-5 shadow-[var(--shadow-sm)]">
               <div className="flex items-center gap-2 mb-4">
                 <CheckSquare size={18} className="text-[var(--retro-wine)]" />
-                <h2 className="text-base font-black uppercase tracking-[0.1em] text-zinc-400">Minhas tasks</h2>
+                <h2 className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--text-tertiary)]">Minhas tasks</h2>
               </div>
 
               {openTasks.length === 0 ? (
-                <p className="mb-4 text-sm text-zinc-400">Nenhuma task aberta. Adicione a primeira abaixo.</p>
+                <p className="mb-4 text-sm text-[var(--text-tertiary)]">Nenhuma task aberta. Adicione a primeira abaixo.</p>
               ) : (
                 <ul className="mb-4 space-y-2">
                   {openTasks.map(task => {
                     const front = task.frontId ? fronts.find(f => f.id === task.frontId) : null
                     return (
-                      <li key={task.id} className="flex items-start gap-3 rounded-xl px-1 py-1.5">
+                      <li key={task.id} className="flex items-start gap-3 rounded-xl px-2 py-2 hover:bg-[var(--bg-secondary)] transition-colors">
                         <button
                           type="button"
                           onClick={() => handleToggleTask(task.id)}
                           aria-label={task.status === 'Concluída' ? 'Marcar como aberta' : 'Marcar como concluída'}
-                          className="mt-0.5 shrink-0 text-zinc-400 transition hover:text-[var(--retro-wine)]"
+                          className="mt-0.5 shrink-0 text-[var(--text-tertiary)] transition hover:text-[var(--retro-wine)]"
                         >
                           <Square size={17} />
                         </button>
                         <div className="min-w-0 flex-1">
-                          <span className="text-sm font-semibold text-zinc-800">{task.text}</span>
+                          <span className="text-sm font-medium text-[var(--text-primary)]">{task.text}</span>
                           <div className="mt-0.5 flex flex-wrap items-center gap-2">
                             {task.dueDate && (
-                              <span className="flex items-center gap-1 text-xs text-zinc-400">
+                              <span className="flex items-center gap-1 text-xs text-[var(--text-tertiary)]">
                                 <CalendarDays size={12} />
                                 {formatDate(task.dueDate)}
                               </span>
                             )}
                             {front && (
-                              <span className="rounded-full bg-violet-50 px-2 py-0.5 text-xs font-bold text-violet-700">
+                              <span className="rounded-full bg-violet-50 px-2 py-0.5 text-xs font-semibold text-violet-700">
                                 {front.name}
                               </span>
                             )}
@@ -207,11 +207,11 @@ export default function HojePage() {
                   value={newTaskText}
                   onChange={e => setNewTaskText(e.target.value)}
                   placeholder="Nova task..."
-                  className="min-w-0 flex-1 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none placeholder:text-zinc-400 focus:border-[var(--retro-wine)] focus:ring-1 focus:ring-[var(--retro-wine)]"
+                  className="min-w-0 flex-1 rounded-xl border border-[var(--border-medium)] bg-[var(--bg-primary)] px-3 py-2 text-sm outline-none placeholder:text-[var(--text-tertiary)] focus:border-[var(--retro-wine)] focus:ring-2 focus:ring-[var(--retro-wine-soft)]"
                 />
                 <button
                   type="submit"
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--retro-wine)] px-4 py-2 text-sm font-black text-white shadow-sm transition hover:bg-[var(--retro-wine-deep)]"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--retro-wine)] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[var(--retro-wine-hover)]"
                 >
                   <Plus size={15} />
                   Add
@@ -224,33 +224,33 @@ export default function HojePage() {
           <div className="space-y-5">
 
             {/* ── Próximos 1:1s ── */}
-            <section className="rounded-3xl border border-black/5 bg-white p-5 shadow-sm shadow-zinc-950/5 sm:p-6">
+            <section className="rounded-2xl border border-[var(--border-medium)] bg-[var(--bg-primary)] p-5 shadow-[var(--shadow-sm)]">
               <div className="flex items-center gap-2 mb-4">
                 <Users size={18} className="text-sky-500" />
-                <h2 className="text-base font-black uppercase tracking-[0.1em] text-zinc-400">Próximos 1:1s</h2>
+                <h2 className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--text-tertiary)]">Próximos 1:1s</h2>
               </div>
 
               {sortedPeople.length === 0 ? (
-                <p className="text-sm text-zinc-400">Nenhuma pessoa com 1:1 agendado.</p>
+                <p className="text-sm text-[var(--text-tertiary)]">Nenhuma pessoa com 1:1 agendado.</p>
               ) : (
-                <ul className="space-y-3">
+                <ul className="space-y-2.5">
                   {sortedPeople.slice(0, 6).map(person => (
                     <li key={person.id}>
                       <Link
                         href="/pessoas"
-                        className="flex items-center gap-3 rounded-xl px-1 py-1.5 transition hover:bg-zinc-50"
+                        className="flex items-center gap-3 rounded-xl px-2 py-2 transition hover:bg-[var(--bg-secondary)]"
                       >
-                        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[var(--retro-wine)] text-xs font-black text-white uppercase">
+                        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[var(--retro-wine)] text-xs font-bold text-white uppercase">
                           {person.name.slice(0, 2)}
                         </span>
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-black text-zinc-900">{person.name}</p>
-                          <p className="flex items-center gap-1 text-xs text-zinc-400">
+                          <p className="text-sm font-semibold text-[var(--text-primary)]">{person.name}</p>
+                          <p className="flex items-center gap-1 text-xs text-[var(--text-tertiary)]">
                             <CalendarDays size={11} />
                             {formatDate(person.nextOneOnOne)}
                           </p>
                         </div>
-                        <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-bold ${attentionStyle[person.attention] ?? 'bg-zinc-100 text-zinc-600'}`}>
+                        <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${attentionStyle[person.attention] ?? 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)]'}`}>
                           {person.attention}
                         </span>
                       </Link>
@@ -261,33 +261,33 @@ export default function HojePage() {
             </section>
 
             {/* ── Pulso da retro ── */}
-            <section className="rounded-3xl border border-black/5 bg-white p-5 shadow-sm shadow-zinc-950/5 sm:p-6">
+            <section className="rounded-2xl border border-[var(--border-medium)] bg-[var(--bg-primary)] p-5 shadow-[var(--shadow-sm)]">
               <div className="flex items-center gap-2 mb-4">
                 <ThermometerSun size={18} className="text-emerald-500" />
-                <h2 className="text-base font-black uppercase tracking-[0.1em] text-zinc-400">Pulso da retro</h2>
+                <h2 className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--text-tertiary)]">Pulso da retro</h2>
               </div>
 
               {!lastSnapshot ? (
-                <p className="text-sm text-zinc-400">Nenhum snapshot de retro registrado ainda.</p>
+                <p className="text-sm text-[var(--text-tertiary)]">Nenhum snapshot de retro registrado ainda.</p>
               ) : (
                 <div className="space-y-3">
-                  <p className="text-xs text-zinc-400">
-                    Último snapshot: <span className="font-bold text-zinc-600">{formatDate(lastSnapshot.date)}</span>
+                  <p className="text-xs text-[var(--text-tertiary)]">
+                    Último snapshot: <span className="font-semibold text-[var(--text-secondary)]">{formatDate(lastSnapshot.date)}</span>
                   </p>
                   <div className="flex items-center gap-3">
-                    <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-2xl bg-emerald-50">
-                      <span className="text-xl font-black text-emerald-700">{lastSnapshot.moodAverage.toFixed(1)}</span>
-                      <span className="text-[10px] font-bold text-emerald-500">mood</span>
+                    <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-xl bg-emerald-50">
+                      <span className="text-xl font-bold text-emerald-700">{lastSnapshot.moodAverage.toFixed(1)}</span>
+                      <span className="text-[10px] font-semibold text-emerald-600">mood</span>
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-zinc-700">{lastSnapshot.title}</p>
-                      <p className="text-xs text-zinc-400">{lastSnapshot.itemCount} cards · {lastSnapshot.moodCount} respostas</p>
+                      <p className="text-sm font-semibold text-[var(--text-primary)]">{lastSnapshot.title}</p>
+                      <p className="text-xs text-[var(--text-tertiary)]">{lastSnapshot.itemCount} cards · {lastSnapshot.moodCount} respostas</p>
                     </div>
                   </div>
                   {lastSnapshot.themes.length > 0 && (
                     <div className="flex flex-wrap gap-1.5">
                       {lastSnapshot.themes.map(theme => (
-                        <span key={theme} className="rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-semibold text-zinc-600">
+                        <span key={theme} className="rounded-full bg-[var(--bg-tertiary)] px-2.5 py-1 text-xs font-medium text-[var(--text-secondary)]">
                           {theme}
                         </span>
                       ))}
@@ -296,7 +296,7 @@ export default function HojePage() {
                   <div className="pt-1">
                     <Link
                       href="/retro"
-                      className="text-xs font-black text-[var(--retro-wine)] transition hover:underline"
+                      className="text-xs font-semibold text-[var(--retro-wine)] transition hover:underline"
                     >
                       Ver histórico de retros →
                     </Link>
