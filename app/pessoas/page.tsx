@@ -21,22 +21,22 @@ import {
 
 // ─── Styles ──────────────────────────────────────────────────────────────────
 
-const cardClass = 'rounded-3xl border border-black/5 bg-white shadow-sm'
+const cardClass = 'border border-zinc-200 rounded-2xl bg-white overflow-hidden'
 const fieldClass =
-  'w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-[var(--retro-wine)] focus:ring-2 focus:ring-[rgba(135,0,47,0.08)]'
+  'w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-zinc-400 focus:ring-2 focus:ring-zinc-100'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const attentionTone: Record<AttentionType, string> = {
-  'Dar autonomia': 'bg-emerald-50 text-emerald-700',
-  Desafiar: 'bg-violet-50 text-violet-700',
-  Cuidar: 'bg-rose-50 text-rose-700',
-  Desenvolver: 'bg-blue-50 text-blue-700',
-  'Monitorar carga': 'bg-amber-50 text-amber-700',
+  'Dar autonomia': 'bg-emerald-100 text-emerald-800',
+  Desafiar: 'bg-violet-100 text-violet-800',
+  Cuidar: 'bg-rose-100 text-rose-800',
+  Desenvolver: 'bg-blue-100 text-blue-800',
+  'Monitorar carga': 'bg-amber-100 text-amber-800',
 }
 
 const avatarColors = [
-  'bg-[rgba(135,0,47,0.10)] text-[var(--retro-wine)]',
+  'bg-rose-100 text-rose-700',
   'bg-violet-100 text-violet-700',
   'bg-blue-100 text-blue-700',
   'bg-emerald-100 text-emerald-700',
@@ -80,18 +80,23 @@ function NoteHistory({ entries }: { entries: NoteEntry[] }) {
   if (entries.length === 0) return <p className="text-xs text-zinc-400">Nenhum registro ainda.</p>
   const visible = expanded ? entries : entries.slice(0, 3)
   return (
-    <div className="mt-3 grid gap-2">
+    <div className="mt-3 grid gap-4">
       {visible.map(entry => (
-        <div key={entry.id} className="flex gap-3 text-xs">
-          <span className="shrink-0 font-bold text-zinc-400">{formatTimestamp(entry.createdAt)}</span>
-          <span className="text-zinc-700">{entry.text}</span>
+        <div key={entry.id}>
+          <div className="flex items-center gap-3 mb-2">
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400 shrink-0">
+              {formatTimestamp(entry.createdAt)}
+            </span>
+            <div className="flex-1 border-t border-zinc-100" />
+          </div>
+          <p className="text-sm text-zinc-700">{entry.text}</p>
         </div>
       ))}
       {entries.length > 3 && (
         <button
           type="button"
           onClick={() => setExpanded(v => !v)}
-          className="mt-1 text-left text-xs font-bold text-[var(--retro-wine)]"
+          className="text-left text-xs font-semibold text-zinc-500 hover:text-zinc-800"
         >
           {expanded ? 'Ver menos' : `+ ${entries.length - 3} mais antigas`}
         </button>
@@ -200,22 +205,22 @@ function PersonCard({
   ]
 
   return (
-    <div className={`${cardClass} overflow-hidden`}>
+    <div className={cardClass}>
       {/* ── Collapsed header ── */}
       <button
         type="button"
         onClick={() => setOpen(v => !v)}
-        className="flex w-full items-center gap-3 px-5 py-4 text-left transition hover:bg-zinc-50/60"
+        className="flex w-full items-center gap-3 px-5 py-4 text-left transition hover:bg-zinc-50"
       >
-        <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-full text-sm font-black ${avatarColor(person.id)}`}>
+        <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-full text-sm font-bold ${avatarColor(person.id)}`}>
           {initials(person.name) || <UserRound size={16} />}
         </span>
         <span className="min-w-0 flex-1">
-          <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <span className="font-black text-zinc-900">{person.name || <span className="text-zinc-400">Sem nome</span>}</span>
-            <span className="text-xs text-zinc-400">{person.role}</span>
+          <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span className="font-semibold text-zinc-900">{person.name || <span className="text-zinc-400">Sem nome</span>}</span>
+            {person.role && <span className="text-sm text-zinc-500">{person.role}</span>}
             {person.attention && (
-              <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${attentionTone[person.attention]}`}>
+              <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${attentionTone[person.attention]}`}>
                 {person.attention}
               </span>
             )}
@@ -224,23 +229,26 @@ function PersonCard({
             )}
           </span>
         </span>
-        {open ? <ChevronDown size={16} className="shrink-0 text-zinc-400" /> : <ChevronRight size={16} className="shrink-0 text-zinc-400" />}
+        {open
+          ? <ChevronDown size={16} className="shrink-0 text-zinc-400" />
+          : <ChevronRight size={16} className="shrink-0 text-zinc-400" />
+        }
       </button>
 
       {/* ── Expanded body ── */}
       {open && (
         <div className="border-t border-zinc-100">
           {/* Tab nav */}
-          <div className="flex gap-1 border-b border-zinc-100 px-5 pt-3">
+          <div className="flex gap-1 px-5 pt-4 pb-0">
             {tabs.map(t => (
               <button
                 key={t.id}
                 type="button"
                 onClick={() => setTab(t.id)}
-                className={`rounded-t-lg px-3 py-2 text-xs font-bold transition ${
+                className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
                   tab === t.id
-                    ? 'border-b-2 border-[var(--retro-wine)] text-[var(--retro-wine)]'
-                    : 'text-zinc-500 hover:text-zinc-800'
+                    ? 'bg-zinc-900 text-white'
+                    : 'text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100'
                 }`}
               >
                 {t.label}
@@ -248,17 +256,21 @@ function PersonCard({
             ))}
           </div>
 
-          <div className="p-5">
+          <div className="bg-zinc-50/50 rounded-b-2xl p-5 mt-3">
             {/* ─── Aba: Geral ──────────────────────────────── */}
             {tab === 'geral' && (
               <div className="grid gap-4">
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <label className="grid gap-1.5 text-xs font-bold text-zinc-500">
-                    Momento atual
+                  <div className="grid gap-1">
+                    <label className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400 mb-1">
+                      Momento atual
+                    </label>
                     <input type="text" placeholder="Ex: Trilha para especialista…" className={fieldClass} {...field('moment')} />
-                  </label>
-                  <label className="grid gap-1.5 text-xs font-bold text-zinc-500">
-                    Atenção
+                  </div>
+                  <div className="grid gap-1">
+                    <label className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400 mb-1">
+                      Atenção
+                    </label>
                     <select
                       className={fieldClass}
                       value={draft.attention}
@@ -267,16 +279,18 @@ function PersonCard({
                     >
                       {attentionTypes.map(t => <option key={t}>{t}</option>)}
                     </select>
-                  </label>
+                  </div>
                 </div>
 
-                <label className="grid gap-1.5 text-xs font-bold text-zinc-500">
-                  Próximo 1:1
+                <div className="grid gap-1">
+                  <label className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400 mb-1">
+                    Próximo 1:1
+                  </label>
                   <input type="date" className={`${fieldClass} max-w-[200px]`} {...field('nextOneOnOne')} />
-                </label>
+                </div>
 
-                <div className="grid gap-1.5">
-                  <p className="text-xs font-bold text-zinc-500">Projetos</p>
+                <div className="grid gap-1">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400 mb-1">Projetos</p>
                   <div className="grid gap-2">
                     {draft.frontIds.map((proj, i) => (
                       <div key={i} className="flex items-center gap-2">
@@ -300,21 +314,25 @@ function PersonCard({
                     <button
                       type="button"
                       onClick={addProject}
-                      className="flex items-center gap-1.5 text-xs font-bold text-[var(--retro-wine)]"
+                      className="flex items-center gap-1.5 text-xs font-semibold text-zinc-500 hover:text-zinc-800"
                     >
                       <Plus size={13} /> Adicionar projeto
                     </button>
                   </div>
                 </div>
 
-                <label className="grid gap-1.5 text-xs font-bold text-zinc-500">
-                  Próximo salto
+                <div className="grid gap-1">
+                  <label className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400 mb-1">
+                    Próximo salto
+                  </label>
                   <textarea rows={2} placeholder="Qual é a próxima evolução esperada?" className={fieldClass} {...field('nextLeap')} />
-                </label>
+                </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <label className="grid gap-1.5 text-xs font-bold text-zinc-500">
-                    Alertas / riscos
+                  <div className="grid gap-1">
+                    <label className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400 mb-1">
+                      Alertas / riscos
+                    </label>
                     <textarea
                       rows={3}
                       placeholder="Um risco por linha"
@@ -323,9 +341,11 @@ function PersonCard({
                       onChange={e => setDraft(d => ({ ...d, risks: e.target.value.split('\n') }))}
                       onBlur={e => save({ ...draft, risks: e.target.value.split('\n').filter(Boolean) })}
                     />
-                  </label>
-                  <label className="grid gap-1.5 text-xs font-bold text-zinc-500">
-                    Alavancas
+                  </div>
+                  <div className="grid gap-1">
+                    <label className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400 mb-1">
+                      Alavancas
+                    </label>
                     <textarea
                       rows={3}
                       placeholder="Uma alavanca por linha"
@@ -334,7 +354,7 @@ function PersonCard({
                       onChange={e => setDraft(d => ({ ...d, levers: e.target.value.split('\n') }))}
                       onBlur={e => save({ ...draft, levers: e.target.value.split('\n').filter(Boolean) })}
                     />
-                  </label>
+                  </div>
                 </div>
               </div>
             )}
@@ -343,8 +363,10 @@ function PersonCard({
             {tab === 'pdi' && (
               <div className="grid gap-4">
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <label className="grid gap-1.5 text-xs font-bold text-zinc-500">
-                    Título do PDI
+                  <div className="grid gap-1">
+                    <label className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400 mb-1">
+                      Título do PDI
+                    </label>
                     <input
                       type="text"
                       placeholder="Ex: Especialista: influência técnica"
@@ -352,9 +374,11 @@ function PersonCard({
                       value={pdiDraft.title}
                       onChange={e => setPdiDraft(d => ({ ...d, title: e.target.value }))}
                     />
-                  </label>
-                  <label className="grid gap-1.5 text-xs font-bold text-zinc-500">
-                    Status
+                  </div>
+                  <div className="grid gap-1">
+                    <label className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400 mb-1">
+                      Status
+                    </label>
                     <select
                       className={fieldClass}
                       value={pdiDraft.status}
@@ -364,10 +388,12 @@ function PersonCard({
                       <option>Em revisão</option>
                       <option>Sem PDI</option>
                     </select>
-                  </label>
+                  </div>
                 </div>
-                <label className="grid gap-1.5 text-xs font-bold text-zinc-500">
-                  Objetivos
+                <div className="grid gap-1">
+                  <label className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400 mb-1">
+                    Objetivos
+                  </label>
                   <textarea
                     rows={3}
                     placeholder="Um objetivo por linha"
@@ -375,9 +401,11 @@ function PersonCard({
                     value={pdiDraft.goals}
                     onChange={e => setPdiDraft(d => ({ ...d, goals: e.target.value }))}
                   />
-                </label>
-                <label className="grid gap-1.5 text-xs font-bold text-zinc-500">
-                  Próximo passo
+                </div>
+                <div className="grid gap-1">
+                  <label className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400 mb-1">
+                    Próximo passo
+                  </label>
                   <textarea
                     rows={2}
                     placeholder="O que precisa acontecer antes do próximo 1:1?"
@@ -385,11 +413,11 @@ function PersonCard({
                     value={pdiDraft.nextStep}
                     onChange={e => setPdiDraft(d => ({ ...d, nextStep: e.target.value }))}
                   />
-                </label>
+                </div>
                 <button
                   type="button"
                   onClick={savePdi}
-                  className="justify-self-start rounded-xl bg-[var(--retro-wine)] px-5 py-2.5 text-sm font-black text-white"
+                  className="justify-self-start rounded-xl bg-zinc-900 px-5 py-2 text-sm font-semibold text-white hover:bg-zinc-800"
                 >
                   Salvar PDI
                 </button>
@@ -399,8 +427,10 @@ function PersonCard({
             {/* ─── Aba: Notas ──────────────────────────────── */}
             {tab === 'notas' && (
               <div className="grid gap-4">
-                <label className="grid gap-1.5 text-xs font-bold text-zinc-500">
-                  Nova nota
+                <div className="grid gap-1">
+                  <label className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400 mb-1">
+                    Nova nota
+                  </label>
                   <textarea
                     rows={4}
                     value={noteText}
@@ -408,17 +438,17 @@ function PersonCard({
                     placeholder="O que observou, o que vai desafiar no próximo 1:1..."
                     className={fieldClass}
                   />
-                </label>
+                </div>
                 <button
                   type="button"
                   onClick={addNote}
                   disabled={!noteText.trim()}
-                  className="justify-self-start rounded-xl bg-[var(--retro-wine)] px-5 py-2.5 text-sm font-black text-white disabled:opacity-40"
+                  className="justify-self-start rounded-xl bg-zinc-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40 hover:bg-zinc-800"
                 >
                   Salvar nota
                 </button>
-                <div className="border-t border-zinc-100 pt-4">
-                  <p className="text-xs font-bold text-zinc-500">Histórico</p>
+                <div className="border-t border-zinc-200 pt-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400 mb-3">Histórico</p>
                   <NoteHistory entries={draft.notes} />
                 </div>
               </div>
@@ -427,8 +457,10 @@ function PersonCard({
             {/* ─── Aba: Feedback ───────────────────────────── */}
             {tab === 'feedback' && (
               <div className="grid gap-4">
-                <label className="grid gap-1.5 text-xs font-bold text-zinc-500">
-                  Novo feedback
+                <div className="grid gap-1">
+                  <label className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400 mb-1">
+                    Novo feedback
+                  </label>
                   <textarea
                     rows={4}
                     value={fbText}
@@ -436,27 +468,27 @@ function PersonCard({
                     placeholder="Feedback dado ou recebido, contexto, data..."
                     className={fieldClass}
                   />
-                </label>
+                </div>
                 <button
                   type="button"
                   onClick={addFeedback}
                   disabled={!fbText.trim()}
-                  className="justify-self-start rounded-xl bg-[var(--retro-wine)] px-5 py-2.5 text-sm font-black text-white disabled:opacity-40"
+                  className="justify-self-start rounded-xl bg-zinc-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40 hover:bg-zinc-800"
                 >
                   Registrar feedback
                 </button>
-                <div className="border-t border-zinc-100 pt-4">
-                  <p className="text-xs font-bold text-zinc-500">Histórico</p>
+                <div className="border-t border-zinc-200 pt-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400 mb-3">Histórico</p>
                   <NoteHistory entries={draft.feedback} />
                 </div>
               </div>
             )}
 
-            <div className="mt-4 flex justify-end border-t border-zinc-100 pt-4">
+            <div className="mt-4 flex justify-end border-t border-zinc-200 pt-4">
               <button
                 type="button"
                 onClick={() => onDelete(person.id)}
-                className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50"
+                className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold text-rose-500 hover:bg-rose-50"
               >
                 <Trash2 size={13} /> Remover pessoa
               </button>
@@ -484,10 +516,10 @@ function AddPersonForm({ onAdd, onCancel }: { onAdd: (p: LeadershipPerson) => vo
   return (
     <form
       onSubmit={submit}
-      className={`${cardClass} grid gap-4 p-5 sm:grid-cols-[1fr_1fr_auto_auto_auto] sm:items-end`}
+      className="border border-zinc-200 rounded-2xl bg-white p-5 grid gap-4 sm:grid-cols-[1fr_1fr_auto_auto_auto] sm:items-end"
     >
-      <label className="grid gap-1.5 text-xs font-bold text-zinc-500">
-        Nome
+      <div className="grid gap-1">
+        <label className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400 mb-1">Nome</label>
         <input
           autoFocus
           required
@@ -497,9 +529,9 @@ function AddPersonForm({ onAdd, onCancel }: { onAdd: (p: LeadershipPerson) => vo
           placeholder="Nome da pessoa"
           className={fieldClass}
         />
-      </label>
-      <label className="grid gap-1.5 text-xs font-bold text-zinc-500">
-        Cargo
+      </div>
+      <div className="grid gap-1">
+        <label className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400 mb-1">Cargo</label>
         <input
           type="text"
           value={role}
@@ -507,9 +539,9 @@ function AddPersonForm({ onAdd, onCancel }: { onAdd: (p: LeadershipPerson) => vo
           placeholder="Ex: Analista sênior"
           className={fieldClass}
         />
-      </label>
-      <label className="grid gap-1.5 text-xs font-bold text-zinc-500">
-        Categoria
+      </div>
+      <div className="grid gap-1">
+        <label className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400 mb-1">Categoria</label>
         <select
           value={relationship}
           onChange={e => setRelationship(e.target.value as 'Liderado direto' | 'Time negócios')}
@@ -518,17 +550,17 @@ function AddPersonForm({ onAdd, onCancel }: { onAdd: (p: LeadershipPerson) => vo
           <option value="Liderado direto">Liderado direto</option>
           <option value="Time negócios">Time negócios</option>
         </select>
-      </label>
+      </div>
       <button
         type="button"
         onClick={onCancel}
-        className="h-10 rounded-xl border border-zinc-200 px-4 text-sm font-bold text-zinc-600 hover:bg-zinc-50"
+        className="h-10 rounded-xl border border-zinc-200 px-4 text-sm font-semibold text-zinc-600 hover:bg-zinc-50"
       >
         Cancelar
       </button>
       <button
         type="submit"
-        className="h-10 rounded-xl bg-[var(--retro-wine)] px-5 text-sm font-black text-white"
+        className="h-10 rounded-xl bg-zinc-900 px-5 text-sm font-semibold text-white hover:bg-zinc-800"
       >
         Adicionar
       </button>
@@ -552,7 +584,10 @@ function Section({
   if (people.length === 0) return null
   return (
     <section className="grid gap-3">
-      <h2 className="text-sm font-black uppercase tracking-[0.12em] text-zinc-500">{title}</h2>
+      <div className="flex items-center gap-3">
+        <h2 className="text-[11px] font-bold uppercase tracking-widest text-zinc-400">{title}</h2>
+        <div className="flex-1 border-t border-zinc-100" />
+      </div>
       {people.map(person => (
         <PersonCard key={person.id} person={person} onChange={onChangePerson} onDelete={onDeletePerson} />
       ))}
@@ -596,19 +631,19 @@ export default function PessoasPage() {
   return (
     <main
       id="main-content"
-      className="min-h-screen bg-[var(--retro-bg)] px-4 py-6 text-[var(--retro-ink)] sm:px-6 lg:px-8"
+      className="min-h-screen bg-zinc-50 px-4 py-6 text-zinc-900 sm:px-6 lg:px-8"
     >
       <div className="mx-auto max-w-3xl">
         {/* Header */}
         <header className="flex items-center justify-between gap-4">
-          <h1 className="text-3xl font-black tracking-tight text-zinc-950 sm:text-4xl">Time</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-zinc-950">Time</h1>
           {!showAddForm && (
             <button
               type="button"
               onClick={() => setShowAddForm(true)}
-              className="inline-flex items-center gap-2 rounded-xl bg-[var(--retro-wine)] px-5 py-2.5 text-sm font-black text-white shadow-lg shadow-[rgba(135,0,47,0.16)]"
+              className="inline-flex items-center gap-2 rounded-xl bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800"
             >
-              <Plus size={16} /> Adicionar pessoa
+              <Plus size={15} /> Adicionar pessoa
             </button>
           )}
         </header>
@@ -622,14 +657,14 @@ export default function PessoasPage() {
 
         {/* Empty state */}
         {people.length === 0 && !showAddForm && (
-          <div className={`${cardClass} mt-8 grid place-items-center py-16 text-center`}>
-            <UserRound size={32} className="text-zinc-300" />
-            <p className="mt-4 font-black text-zinc-800">Nenhuma pessoa ainda</p>
+          <div className="border border-zinc-200 rounded-2xl bg-white mt-8 grid place-items-center py-20 text-center">
+            <UserRound size={36} className="text-zinc-300" />
+            <p className="mt-4 font-semibold text-zinc-800">Nenhuma pessoa ainda</p>
             <p className="mt-1 text-sm text-zinc-400">Adicione os membros do seu time para começar.</p>
             <button
               type="button"
               onClick={() => setShowAddForm(true)}
-              className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[var(--retro-wine)] px-5 py-2.5 text-sm font-black text-white"
+              className="mt-6 inline-flex items-center gap-2 rounded-xl bg-zinc-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-zinc-800"
             >
               <Plus size={15} /> Adicionar pessoa
             </button>
