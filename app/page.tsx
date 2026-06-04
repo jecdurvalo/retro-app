@@ -1,65 +1,82 @@
-import Image from "next/image";
+'use client'
 
-export default function Home() {
+import Image from 'next/image'
+import Link from 'next/link'
+import { ClipboardList, LayoutDashboard, QrCode, Smartphone } from 'lucide-react'
+import { QRCodeSVG } from 'qrcode.react'
+import { TEAM_JOIN_URL } from '@/lib/site-url'
+
+export default function HomePage() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <main className="relative min-h-screen overflow-hidden bg-[var(--retro-wine)] text-white">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(255,255,255,0.1),transparent_28%),radial-gradient(circle_at_86%_18%,rgba(52,232,207,0.22),transparent_24%),linear-gradient(135deg,var(--retro-wine),var(--retro-wine-deep)_68%)]" />
+      <div className="absolute -right-32 top-[-8rem] h-[44rem] w-[34rem] rotate-12 rounded-[6rem] border border-white/10 bg-white/5 shadow-2xl shadow-black/20" />
+      <div className="absolute right-16 top-0 hidden h-72 w-16 rounded-b-[2.5rem] bg-[var(--retro-cyan)]/90 shadow-2xl shadow-cyan-300/30 lg:block" />
+      <div className="absolute bottom-[-9rem] left-[-6rem] h-80 w-80 rounded-full border border-white/10 bg-white/5" />
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:64px_64px] opacity-45" />
+
+      <section className="relative mx-auto flex min-h-screen max-w-7xl flex-col px-5 py-5 sm:px-8 lg:px-10">
+        <nav className="flex items-center justify-between rounded-3xl border border-white/12 bg-white/8 px-4 py-3 shadow-2xl shadow-black/10 backdrop-blur-2xl">
+          <Link href="/" className="flex items-center gap-3 text-sm font-bold">
+            <Image src="/retro-mark.svg" alt="Retro Sync" width={40} height={40} className="h-10 w-10 rounded-2xl shadow-lg shadow-black/15" />
+            <span>
+              <span className="block leading-4">Retro Sync</span>
+              <span className="block text-xs font-semibold text-white/50">mensal</span>
+            </span>
+          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/team"
+              className="inline-flex items-center gap-1.5 rounded-2xl border border-white/15 bg-white/10 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-white/15"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+              <ClipboardList size={16} />
+              Responder
+            </Link>
+            <Link
+              href="/dashboard"
+              className="inline-flex items-center gap-1.5 rounded-2xl bg-[var(--retro-cyan)] px-4 py-2.5 text-sm font-black text-[var(--retro-wine-deep)] shadow-xl shadow-cyan-300/20 transition hover:brightness-110"
             >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+              <LayoutDashboard size={16} />
+              Dashboard
+            </Link>
+          </div>
+        </nav>
+
+        <div className="grid flex-1 items-center gap-8 py-10 lg:grid-cols-[minmax(0,1fr)_400px] lg:py-14">
+          <div className="max-w-3xl">
+            <p className="mb-5 inline-flex rounded-2xl border border-white/14 bg-white/10 px-4 py-2 text-sm font-bold text-white/70 backdrop-blur">
+              Retro mensal
+            </p>
+            <h1 className="max-w-4xl text-5xl font-black leading-[0.94] tracking-normal text-white sm:text-6xl lg:text-7xl">
+              Vamos ver como estamos?
+            </h1>
+            <p className="mt-6 max-w-2xl text-lg leading-8 text-white/66">
+              Responda pelo celular e acompanhe os pontos no dashboard em tempo real.
+            </p>
+          </div>
+
+          <aside className="rounded-[2rem] border border-white/14 bg-white/10 p-4 shadow-2xl shadow-black/20 backdrop-blur-2xl">
+            <div className="rounded-[1.5rem] bg-white p-5 text-[var(--retro-ink)] shadow-2xl shadow-black/10">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="flex items-center gap-1.5 text-xs font-black uppercase tracking-[0.2em] text-[var(--retro-wine)]">
+                    <QrCode size={14} />
+                    QR do time
+                  </p>
+                  <h2 className="mt-2 flex items-center gap-2 text-2xl font-black">
+                    <Smartphone size={24} />
+                    Responder
+                  </h2>
+                </div>
+              </div>
+              <div className="mt-5 rounded-[1.25rem] border border-zinc-100 bg-white p-4 shadow-inner">
+                <QRCodeSVG value={TEAM_JOIN_URL} size={248} level="H" className="h-auto w-full" />
+              </div>
+              <p className="mt-4 break-all text-xs font-semibold leading-5 text-zinc-500">{TEAM_JOIN_URL}</p>
+            </div>
+          </aside>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
-  );
+      </section>
+    </main>
+  )
 }
