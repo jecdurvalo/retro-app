@@ -40,6 +40,7 @@ import ExecutiveReading from './executive-reading'
 import HotTopicRadar from './hot-topic-radar'
 import InitiativePortfolio from './initiative-portfolio'
 import ManagementQuality from './management-quality'
+import MonthlyClose from './monthly-close'
 
 const PLAN_STORAGE_KEY = `retro-action-plans:${SESSION_ID}`
 const CARD_GROUP_STORAGE_KEY = `retro-card-groups:${SESSION_ID}`
@@ -433,6 +434,8 @@ export default function ManagementPage() {
         </section>
 
         <DelegationBoard />
+
+        <MonthlyClose plans={plans} snapshots={snapshots} currentMood={currentMood} moodCount={moodEntries.length} retroItemCount={items.filter(item => !isMoodItem(item)).length} />
 
         <section className="mt-4 rounded-[2rem] border border-black/5 bg-white/88 p-5 shadow-xl shadow-zinc-950/5 backdrop-blur-xl">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
