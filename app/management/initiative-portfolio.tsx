@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 import {
   createEmptyInitiative,
+  INITIATIVES_UPDATED_EVENT,
   loadInitiatives,
   saveInitiatives,
   type Initiative,
@@ -95,7 +96,12 @@ export default function InitiativePortfolio() {
       setInitiatives(loadInitiatives())
       setLoaded(true)
     })
-    return () => window.cancelAnimationFrame(frame)
+    const syncInitiatives = () => setInitiatives(loadInitiatives())
+    window.addEventListener(INITIATIVES_UPDATED_EVENT, syncInitiatives)
+    return () => {
+      window.cancelAnimationFrame(frame)
+      window.removeEventListener(INITIATIVES_UPDATED_EVENT, syncInitiatives)
+    }
   }, [])
 
   useEffect(() => {

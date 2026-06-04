@@ -40,6 +40,7 @@ import {
   type RetroSnapshot,
 } from '@/lib/management'
 import { SESSION_ID, supabase, type Category, type RetroItem } from '@/lib/supabase'
+import HotTopicRadar from './hot-topic-radar'
 import InitiativePortfolio from './initiative-portfolio'
 
 const PLAN_STORAGE_KEY = `retro-action-plans:${SESSION_ID}`
@@ -375,6 +376,8 @@ export default function ManagementPage() {
           <MetricCard icon={ClipboardCheck} label="Qualidade dos FCAs" value={`${averageCompleteness}%`} detail={`${completeFcas.length} completo(s) de ${plans.length}`} tone="bg-amber-100 text-amber-800" />
           <MetricCard icon={BarChart3} label="Mood atual" value={currentMood ? currentMood.toFixed(1) : '—'} detail={moodEntries.length ? `${moodEntries.length} resposta(s)` : 'Sem respostas nesta sessão'} tone="bg-cyan-100 text-cyan-800" />
         </div>
+
+        <HotTopicRadar />
 
         <div className="mt-4 grid gap-4 xl:grid-cols-[1.5fr_1fr]">
           <section className="rounded-[2rem] border border-black/5 bg-white/88 p-5 shadow-xl shadow-zinc-950/5 backdrop-blur-xl">

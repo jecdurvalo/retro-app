@@ -1,4 +1,5 @@
 export const INITIATIVE_STORAGE_KEY = 'retro-management-initiatives'
+export const INITIATIVES_UPDATED_EVENT = 'retro-initiatives-updated'
 export const INITIATIVES_STORAGE_VERSION = 1
 
 export const initiativeTypes = [
