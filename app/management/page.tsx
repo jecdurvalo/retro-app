@@ -40,6 +40,7 @@ import {
   type RetroSnapshot,
 } from '@/lib/management'
 import { SESSION_ID, supabase, type Category, type RetroItem } from '@/lib/supabase'
+import DelegationBoard from './delegation-board'
 import HotTopicRadar from './hot-topic-radar'
 import InitiativePortfolio from './initiative-portfolio'
 
@@ -417,6 +418,8 @@ export default function ManagementPage() {
         </div>
 
         <InitiativePortfolio />
+
+        <DelegationBoard />
 
         <section className="mt-4 rounded-[2rem] border border-black/5 bg-white/88 p-5 shadow-xl shadow-zinc-950/5 backdrop-blur-xl">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
