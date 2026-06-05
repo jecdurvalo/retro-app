@@ -123,12 +123,18 @@ export const initialSpecGoals: SpecGoal[] = [
   }
 ]
 
+type EvolutionData = {
+  evidences: EvolutionEvidence[]
+  checkpoints: Checkpoint[]
+  goals: SpecGoal[]
+}
+
 // === FUNÇÕES DE STORAGE ===
 function getStorageKey(key: string): string {
   return `retro_sync_${key}`
 }
 
-export function loadEvolutionData() {
+export function loadEvolutionData(): EvolutionData {
   if (typeof window === 'undefined') {
     return {
       evidences: [] as EvolutionEvidence[],

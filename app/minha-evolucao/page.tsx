@@ -16,31 +16,16 @@ import {
   UserRoundCheck,
   UsersRound,
   X,
-  TrendingUp,
-  Award,
-  Briefcase,
-  GraduationCap,
-  Heart,
-  Brain,
 } from 'lucide-react'
 import {
   createEmptyEvidence,
-  createEmptyCheckpoint,
   evolutionAreas,
   leadershipPrinciples,
   loadEvolutionData,
-  saveEvidence,
-  saveCheckpoint,
-  updateSpecGoal,
-  addEvidenceToGoal,
-  getRecentCheckpoints,
-  getOverallProgress,
-  initialSpecGoals,
+  saveEvolutionEvidence,
   type EvolutionArea,
   type EvolutionEvidence,
   type LeadershipPrinciple,
-  type Checkpoint,
-  type SpecGoal,
 } from '@/lib/evolution'
 import { loadFronts, type ManagementFront } from '@/lib/fronts'
 import { loadPeople, type LeadershipPerson } from '@/lib/people'
@@ -56,13 +41,26 @@ const areaTone: Record<EvolutionArea, string> = {
   'Governança e decisões': 'bg-emerald-50 text-emerald-700',
 }
 
-const categoryConfig: Record<SpecGoal['category'], { icon: any; color: string; label: string }> = {
-  lideranca: { icon: UsersRound, color: 'text-violet-600', label: 'Liderança' },
-  estrategia: { icon: TrendingUp, color: 'text-amber-600', label: 'Estratégia' },
-  governanca: { icon: Briefcase, color: 'text-emerald-600', label: 'Governança' },
-  tecnico: { icon: Brain, color: 'text-blue-600', label: 'Técnico' },
-  cultura: { icon: Heart, color: 'text-rose-600', label: 'Cultura' },
-}
+const centralizationPoints = [
+  {
+    title: 'Critérios de decisão ainda ficam muito implícitos',
+    description: 'Transforme contexto em critérios claros para o time decidir sem depender de validação a cada passo.',
+  },
+  {
+    title: 'Cobrança tende a aparecer tarde',
+    description: 'Use checkpoints curtos de frente, FCA e task para cobrar antes do atraso virar surpresa.',
+  },
+  {
+    title: 'Desenvolvimento precisa virar evidência',
+    description: 'Conecte 1:1s, PDIs e temas da retro a fatos observáveis de evolução do time.',
+  },
+]
+
+const commitments = [
+  'Toda frente ativa precisa ter dono, próximo passo e checkpoint.',
+  'Todo ponto relevante da retro deve virar frente, task, FCA, decisão ou evidência de desenvolvimento.',
+  'Todo FCA aberto deve ter ação corretiva, responsável e prazo.',
+]
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }).format(
@@ -206,7 +204,7 @@ function EvidenceModal({
 }
 
 export default function MinhaEvolucaoPage() {
-  const [evidence, setEvidence] = useState<EvolutionEvidence[]>(loadEvolutionEvidence)
+  const [evidence, setEvidence] = useState<EvolutionEvidence[]>(() => loadEvolutionData().evidences)
   const [fronts] = useState<ManagementFront[]>(loadFronts)
   const [people] = useState<LeadershipPerson[]>(loadPeople)
   const [search, setSearch] = useState('')

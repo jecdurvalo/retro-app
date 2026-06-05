@@ -6,8 +6,12 @@ import {
   AlertTriangle,
   CalendarDays,
   CheckSquare,
+  ClipboardCheck,
+  GitBranch,
+  MessageSquareWarning,
   Plus,
   Square,
+  Target,
   ThermometerSun,
   Users,
 } from 'lucide-react'
@@ -15,6 +19,7 @@ import { loadFronts, type ManagementFront } from '@/lib/fronts'
 import { loadTasks, saveTasks, createEmptyTask, type Task } from '@/lib/tasks'
 import { loadPeople, type LeadershipPerson } from '@/lib/people'
 import { loadRetroSnapshots, type RetroSnapshot } from '@/lib/management'
+import { loadDecisions, type LeadershipDecision } from '@/lib/decisions'
 
 function formatDate(iso: string) {
   if (!iso) return ''
@@ -54,12 +59,18 @@ const attentionStyle: Record<string, string> = {
   'Monitorar carga': 'bg-amber-50 text-amber-700',
 }
 
+function isOverdue(value: string, referenceTime: number) {
+  return Boolean(value && new Date(`${value}T23:59:59`).getTime() < referenceTime)
+}
+
 export default function HojePage() {
   const [fronts, setFronts] = useState<ManagementFront[]>([])
   const [tasks, setTasks] = useState<Task[]>([])
   const [people, setPeople] = useState<LeadershipPerson[]>([])
   const [snapshots, setSnapshots] = useState<RetroSnapshot[]>([])
+  const [decisions, setDecisions] = useState<LeadershipDecision[]>([])
   const [newTaskText, setNewTaskText] = useState('')
+  const [referenceTime] = useState(() => Date.now())
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
@@ -67,24 +78,37 @@ export default function HojePage() {
       setTasks(loadTasks())
       setPeople(loadPeople())
       setSnapshots(loadRetroSnapshots())
+      setDecisions(loadDecisions())
     })
 
     return () => window.cancelAnimationFrame(frame)
   }, [])
 
-  // Frentes em atenção ou crítica
-  const urgentFronts = fronts.filter(f => f.temperature === 'Crítica' || f.temperature === 'Atenção')
-
-  // Tasks abertas (status !== Concluída)
   const openTasks = tasks.filter(t => t.status !== 'Concluída')
+  const overdueTasks = openTasks.filter(task => isOverdue(task.dueDate, referenceTime))
+  const openFcas = fronts.flatMap(front => (front.fcas ?? [])
+    .filter(fca => fca.status !== 'Concluído')
+    .map(fca => ({ ...fca, frontName: front.name, frontId: front.id })))
+  const pendingDecisions = decisions.filter(decision => decision.status === 'Pendente' || decision.status === 'Em alinhamento' || decision.status === 'Escalada')
 
-  // Pessoas ordenadas por nextOneOnOne mais próximo
+  const urgentFronts = fronts.filter(f =>
+    f.temperature === 'Crítica' ||
+    f.temperature === 'Atenção' ||
+    f.status === 'Bloqueada' ||
+    isOverdue(f.nextCheckpoint, referenceTime)
+  )
+
   const sortedPeople = [...people]
     .filter(p => p.nextOneOnOne)
     .sort((a, b) => a.nextOneOnOne.localeCompare(b.nextOneOnOne))
+  const peopleInFocus = people.filter(person =>
+    person.attention === 'Cuidar' ||
+    person.attention === 'Monitorar carga' ||
+    person.pdi.status === 'Ativo'
+  )
 
-  // Último snapshot de retro
   const lastSnapshot = [...snapshots].sort((a, b) => b.date.localeCompare(a.date))[0] ?? null
+  const retroThemes = lastSnapshot?.themes.slice(0, 4) ?? []
 
   function handleAddTask() {
     const text = newTaskText.trim()
@@ -115,6 +139,111 @@ export default function HojePage() {
           </h1>
           <p className="mt-1 text-sm font-medium capitalize text-[var(--text-secondary)]">{formattedToday()}</p>
         </header>
+
+        <section className="rounded-2xl border border-[var(--border-medium)] bg-[var(--bg-primary)] p-5 shadow-[var(--shadow-sm)]">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <ClipboardCheck size={19} className="text-[var(--retro-wine)]" />
+                <h2 className="text-sm font-black uppercase tracking-[0.12em] text-[var(--text-tertiary)]">Ritual de gestão</h2>
+              </div>
+              <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-[var(--text-secondary)]">
+                O que revisar antes de cobrar: frentes, FCAs, decisões, retro e desenvolvimento.
+              </p>
+            </div>
+            <Link
+              href="/frentes"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--retro-wine)] px-4 py-2.5 text-sm font-black text-white transition hover:bg-[var(--retro-wine-hover)]"
+            >
+              <GitBranch size={16} />
+              Abrir frentes
+            </Link>
+          </div>
+
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+            {[
+              ['Frentes pedindo ação', urgentFronts.length, 'Saúde, bloqueio ou checkpoint'],
+              ['FCAs abertos', openFcas.length, 'Fato, causa e ação'],
+              ['Tasks atrasadas', overdueTasks.length, 'Cobrança objetiva'],
+              ['Decisões pendentes', pendingDecisions.length, 'Trade-offs sem fechamento'],
+              ['Pessoas em foco', peopleInFocus.length, 'Carga, cuidado ou PDI'],
+            ].map(([label, value, detail]) => (
+              <div key={String(label)} className="rounded-xl border border-[var(--border-light)] bg-[var(--bg-secondary)] p-3">
+                <p className="text-[11px] font-black uppercase tracking-wider text-[var(--text-tertiary)]">{String(label)}</p>
+                <p className="mt-1 text-2xl font-black text-[var(--text-primary)]">{Number(value)}</p>
+                <p className="mt-0.5 text-[11px] font-semibold leading-4 text-[var(--text-secondary)]">{String(detail)}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-5 grid gap-4 lg:grid-cols-2">
+            <div className="rounded-xl border border-[var(--border-light)] bg-white p-4">
+              <div className="flex items-center gap-2">
+                <MessageSquareWarning size={16} className="text-amber-500" />
+                <h3 className="text-xs font-black uppercase tracking-wider text-[var(--text-tertiary)]">Pauta de cobrança</h3>
+              </div>
+              <div className="mt-3 space-y-2">
+                {[
+                  ...overdueTasks.slice(0, 3).map(task => ({
+                    title: task.text,
+                    detail: `Task atrasada${task.assignee ? ` · ${task.assignee}` : ''}`,
+                    href: '/frentes',
+                  })),
+                  ...openFcas.slice(0, 2).map(fca => ({
+                    title: fca.action || fca.fact,
+                    detail: `FCA aberto · ${fca.frontName}`,
+                    href: '/frentes',
+                  })),
+                  ...pendingDecisions.slice(0, 2).map(decision => ({
+                    title: decision.title,
+                    detail: `Decisão ${decision.status.toLowerCase()}`,
+                    href: '/decisoes',
+                  })),
+                ].slice(0, 6).map(item => (
+                  <Link key={`${item.detail}-${item.title}`} href={item.href} className="block rounded-lg bg-[var(--bg-secondary)] px-3 py-2 transition hover:bg-zinc-100">
+                    <p className="truncate text-sm font-black text-[var(--text-primary)]">{item.title}</p>
+                    <p className="mt-0.5 text-xs font-semibold text-[var(--text-secondary)]">{item.detail}</p>
+                  </Link>
+                ))}
+                {overdueTasks.length === 0 && openFcas.length === 0 && pendingDecisions.length === 0 && (
+                  <p className="rounded-lg border border-dashed border-[var(--border-medium)] px-3 py-4 text-sm font-semibold text-[var(--text-tertiary)]">
+                    Nada crítico para cobrar agora.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-[var(--border-light)] bg-white p-4">
+              <div className="flex items-center gap-2">
+                <Target size={16} className="text-sky-500" />
+                <h3 className="text-xs font-black uppercase tracking-wider text-[var(--text-tertiary)]">Sinais de liderança</h3>
+              </div>
+              <div className="mt-3 space-y-2">
+                {peopleInFocus.slice(0, 3).map(person => (
+                  <Link key={person.id} href="/pessoas" className="block rounded-lg bg-[var(--bg-secondary)] px-3 py-2 transition hover:bg-zinc-100">
+                    <p className="truncate text-sm font-black text-[var(--text-primary)]">{person.name}</p>
+                    <p className="mt-0.5 text-xs font-semibold text-[var(--text-secondary)]">{person.attention} · {person.pdi.status}</p>
+                  </Link>
+                ))}
+                {retroThemes.length > 0 && (
+                  <div className="rounded-lg bg-[var(--bg-secondary)] px-3 py-2">
+                    <p className="text-xs font-black uppercase tracking-wider text-[var(--text-tertiary)]">Temas da retro</p>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {retroThemes.map(theme => (
+                        <span key={theme} className="rounded-full bg-white px-2.5 py-1 text-xs font-bold text-[var(--text-secondary)]">{theme}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {peopleInFocus.length === 0 && retroThemes.length === 0 && (
+                  <p className="rounded-lg border border-dashed border-[var(--border-medium)] px-3 py-4 text-sm font-semibold text-[var(--text-tertiary)]">
+                    Sem sinais suficientes ainda. Use 1:1s e retro para alimentar esta visão.
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
 
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
           <div className="space-y-5">
