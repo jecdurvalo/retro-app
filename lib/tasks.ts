@@ -62,10 +62,30 @@ export function loadTasks(): Task[] {
   if (typeof window === 'undefined') return []
   try {
     const value = JSON.parse(localStorage.getItem(TASKS_STORAGE_KEY) || 'null')
-    return Array.isArray(value) ? value : []
+    return Array.isArray(value) ? value.map(normalizeTask) : []
   } catch { return [] }
 }
 
 export function saveTasks(tasks: Task[]) {
   if (typeof window !== 'undefined') localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(tasks))
+}
+
+function normalizeTask(value: Partial<Task>): Task {
+  return {
+    id: value.id || `task-${Date.now()}`,
+    text: value.text || '',
+    status: value.status || 'Aberta',
+    dueDate: value.dueDate || '',
+    assignee: value.assignee || '',
+    frontId: value.frontId || '',
+    fcaId: value.fcaId || '',
+    priority: value.priority || 'Média',
+    type: value.type || 'Operacional',
+    effort: value.effort || 'M',
+    tags: Array.isArray(value.tags) ? value.tags : [],
+    subtasks: Array.isArray(value.subtasks) ? value.subtasks : [],
+    notes: value.notes || '',
+    createdAt: value.createdAt || new Date().toISOString(),
+    updatedAt: value.updatedAt || new Date().toISOString(),
+  }
 }

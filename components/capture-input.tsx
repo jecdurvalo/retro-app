@@ -4,7 +4,6 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
 import {
   ArrowLeft,
   ArrowRight,
-  Check,
   ChevronDown,
   Link2,
   Save,
@@ -12,6 +11,7 @@ import {
   X,
 } from 'lucide-react'
 import {
+  createEmptyFCA,
   createEmptyFront,
   loadFronts,
   saveFronts,
@@ -20,6 +20,7 @@ import {
 } from '@/lib/fronts'
 import { createEmptyDecision, loadDecisions, saveDecisions } from '@/lib/decisions'
 import { loadPeople, savePeople } from '@/lib/people'
+import { createEmptyTask, loadTasks, saveTasks } from '@/lib/tasks'
 
 const INPUTS_STORAGE_KEY = 'leadership-captured-inputs'
 
@@ -69,11 +70,12 @@ const fieldClass =
 function suggestClassification(text: string, origin: string, relatedFrontId: string): Classification {
   const normalized = text.toLocaleLowerCase('pt-BR')
 
-  if (relatedFrontId) return 'Atualização de frente existente'
   if (origin === '1:1' || /desenvolv|feedback|carreira|autonomia/.test(normalized)) return 'PDI'
   if (/decid|aprovar|escolher|definir/.test(normalized)) return 'Decisão'
+  if (/fca|causa raiz|causa|fato|corretiv/.test(normalized)) return 'FCA'
   if (/acompanhar|monitorar|observar|sinal/.test(normalized)) return 'Monitoramento'
   if (/ação|acao|tarefa|entregar|fazer|agendar/.test(normalized)) return 'Task'
+  if (relatedFrontId) return 'Atualização de frente existente'
   if (/projeto|iniciativa|frente|estruturar/.test(normalized)) return 'Frente nova'
   return 'Insight qualitativo'
 }
@@ -230,6 +232,39 @@ export default function CaptureInput() {
       savePeople(loadPeople().map(person => names.includes(person.name.toLocaleLowerCase('pt-BR'))
         ? { ...person, notes: [{ id: `note-${Date.now()}`, text: `Input para PDI: ${textValue}`, createdAt: new Date().toISOString() }, ...person.notes], updatedAt: new Date().toISOString() }
         : person))
+    } else if (relatedFrontId && classification === 'Task') {
+      saveTasks([
+        createEmptyTask({
+          text: textValue,
+          dueDate: '',
+          assignee: people.split(',')[0]?.trim() || '',
+          frontId: relatedFrontId,
+          notes: notesValue,
+          priority: urgency === 'Crítica' ? 'Urgente' : urgency === 'Alta' ? 'Alta' : urgency === 'Baixa' ? 'Baixa' : 'Média',
+        }),
+        ...loadTasks(),
+      ])
+    } else if (relatedFrontId && classification === 'FCA') {
+      const fca = {
+        ...createEmptyFCA(),
+        fact: textValue,
+        cause: notesValue,
+        action: relatedDecision.trim() || 'Definir ação corretiva',
+        owner: people.split(',')[0]?.trim() || '',
+        status: urgency === 'Crítica' ? 'Bloqueado' as const : 'Em andamento' as const,
+      }
+      saveFronts(currentFronts.map(front => {
+        if (front.id !== relatedFrontId) return front
+
+        const peopleToAdd = people.split(',').map(item => item.trim()).filter(Boolean)
+        return {
+          ...front,
+          involvedPeople: [...new Set([...front.involvedPeople, ...peopleToAdd])],
+          fcas: [fca, ...(front.fcas ?? [])],
+          evidence: [`FCA: ${textValue}`, ...front.evidence],
+          updatedAt: new Date().toISOString(),
+        }
+      }))
     } else if (relatedFrontId && classification !== 'Insight qualitativo') {
       saveFronts(currentFronts.map(front => {
         if (front.id !== relatedFrontId) return front
@@ -238,10 +273,10 @@ export default function CaptureInput() {
         return {
           ...front,
           involvedPeople: [...new Set([...front.involvedPeople, ...peopleToAdd])],
-          relatedTasks: classification === 'Task' || classification === 'Atualização de frente existente' || classification === 'Monitoramento' || classification === 'FCA'
+          relatedTasks: classification === 'Atualização de frente existente' || classification === 'Monitoramento'
             ? [...front.relatedTasks, `${classification}: ${textValue}`]
             : front.relatedTasks,
-          evidence: classification === 'Monitoramento' || classification === 'FCA' ? [`${classification}: ${textValue}`, ...front.evidence] : front.evidence,
+          evidence: classification === 'Monitoramento' ? [`${classification}: ${textValue}`, ...front.evidence] : front.evidence,
           updatedAt: new Date().toISOString(),
         }
       }))

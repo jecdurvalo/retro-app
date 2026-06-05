@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import {
   ChevronDown,
   ChevronRight,
@@ -123,13 +123,6 @@ function PersonCard({
 
   // local draft mirrors person so we can auto-save on blur
   const [draft, setDraft] = useState(person)
-
-  // Keep draft in sync if parent replaces the person (e.g. after note save)
-  const prevId = useRef(person.id)
-  if (prevId.current !== person.id) {
-    setDraft(person)
-    prevId.current = person.id
-  }
 
   function save(updated: LeadershipPerson) {
     setDraft(updated)
@@ -602,7 +595,11 @@ export default function PessoasPage() {
   const [showAddForm, setShowAddForm] = useState(false)
 
   useEffect(() => {
-    setPeople(loadPeople())
+    const frame = window.requestAnimationFrame(() => {
+      setPeople(loadPeople())
+    })
+
+    return () => window.cancelAnimationFrame(frame)
   }, [])
 
   function addPerson(p: LeadershipPerson) {

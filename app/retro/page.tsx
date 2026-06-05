@@ -21,9 +21,13 @@ export default function RetroPage() {
   const [snapshots, setSnapshots] = useState<RetroSnapshot[]>([])
 
   useEffect(() => {
-    const all = loadRetroSnapshots()
-    const sorted = [...all].sort((a, b) => b.date.localeCompare(a.date))
-    setSnapshots(sorted)
+    const frame = window.requestAnimationFrame(() => {
+      const all = loadRetroSnapshots()
+      const sorted = [...all].sort((a, b) => b.date.localeCompare(a.date))
+      setSnapshots(sorted)
+    })
+
+    return () => window.cancelAnimationFrame(frame)
   }, [])
 
   return (

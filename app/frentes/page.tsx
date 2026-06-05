@@ -2,55 +2,37 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
+  Archive,
+  CalendarDays,
+  Check,
   ChevronDown,
   ChevronRight,
   Plus,
-  X,
-  Archive,
-  Check,
+  Search,
   Trash2,
-  Calendar,
-  User,
-  Flag,
-  MoreHorizontal,
-  GripVertical,
-  Clock,
-  AlertCircle,
+  X,
 } from 'lucide-react'
 import {
-  createEmptyFront,
   createEmptyFCA,
+  createEmptyFront,
+  fcaStatuses,
+  frontStatuses,
   frontTemperatures,
-  frontTypes,
   loadFronts,
   saveFronts,
-  fcaStatuses,
-  type ManagementFront,
   type FCA,
+  type ManagementFront,
 } from '@/lib/fronts'
 import {
   createEmptyTask,
   loadTasks,
   saveTasks,
   taskStatuses,
-  taskPriorities,
-  taskTypes,
-  taskEfforts,
   type Task,
-  type TaskPriority,
-  type TaskType,
-  type TaskEffort,
-  type Subtask,
 } from '@/lib/tasks'
 
 const fieldClass =
-  'w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-[var(--retro-wine)] focus:ring-2 focus:ring-[rgba(135,0,47,0.08)] transition-all'
-
-const temperaturePill: Record<ManagementFront['temperature'], string> = {
-  Saudável: 'bg-emerald-500 text-white',
-  Atenção: 'bg-amber-400 text-white',
-  Crítica: 'bg-rose-500 text-white',
-}
+  'w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm font-semibold text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-[var(--retro-wine)] focus:ring-4 focus:ring-[var(--retro-wine-tint)]'
 
 const temperatureDot: Record<ManagementFront['temperature'], string> = {
   Saudável: 'bg-emerald-500',
@@ -58,175 +40,281 @@ const temperatureDot: Record<ManagementFront['temperature'], string> = {
   Crítica: 'bg-rose-500',
 }
 
-const taskStatusConfig: Record<Task['status'], { bg: string; text: string; border: string; dot: string; label: string }> = {
-  Aberta: { 
-    bg: 'bg-zinc-50', 
-    text: 'text-zinc-600', 
-    border: 'border-zinc-200', 
-    dot: 'bg-zinc-400',
-    label: 'bg-zinc-100 text-zinc-700'
-  },
-  'Em andamento': { 
-    bg: 'bg-blue-50', 
-    text: 'text-blue-700', 
-    border: 'border-blue-200', 
-    dot: 'bg-blue-500',
-    label: 'bg-blue-100 text-blue-700'
-  },
-  Concluída: { 
-    bg: 'bg-emerald-50', 
-    text: 'text-emerald-700', 
-    border: 'border-emerald-200', 
-    dot: 'bg-emerald-500',
-    label: 'bg-emerald-100 text-emerald-700'
-  },
+const temperaturePill: Record<ManagementFront['temperature'], string> = {
+  Saudável: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  Atenção: 'bg-amber-50 text-amber-700 border-amber-200',
+  Crítica: 'bg-rose-50 text-rose-700 border-rose-200',
 }
 
-const priorityConfig: Record<TaskPriority, { color: string; bg: string; text: string; dot: string }> = {
-  Baixa: { color: 'zinc', bg: 'bg-zinc-100', text: 'text-zinc-600', dot: 'bg-zinc-400' },
-  Média: { color: 'blue', bg: 'bg-blue-100', text: 'text-blue-700', dot: 'bg-blue-500' },
-  Alta: { color: 'orange', bg: 'bg-orange-100', text: 'text-orange-700', dot: 'bg-orange-500' },
-  Urgente: { color: 'rose', bg: 'bg-rose-100', text: 'text-rose-700', dot: 'bg-rose-500' },
-}
-
-const typeConfig: Record<TaskType, { bg: string; text: string; icon: string }> = {
-  Operacional: { bg: 'bg-slate-100', text: 'text-slate-700', icon: '⚙️' },
-  Estratégica: { bg: 'bg-purple-100', text: 'text-purple-700', icon: '🎯' },
-  Desenvolvimento: { bg: 'bg-green-100', text: 'text-green-700', icon: '🌱' },
-  Governança: { bg: 'bg-amber-100', text: 'text-amber-700', icon: '🛡️' },
-}
-
-const effortConfig: Record<TaskEffort, { color: string; width: string }> = {
-  XS: { color: 'bg-emerald-500', width: 'w-8' },
-  S: { color: 'bg-lime-500', width: 'w-12' },
-  M: { color: 'bg-yellow-500', width: 'w-16' },
-  L: { color: 'bg-orange-500', width: 'w-20' },
-  XL: { color: 'bg-rose-500', width: 'w-24' },
-}
-
-const fcaBorderLeft: Record<FCA['status'], string> = {
-  'Em andamento': 'border-l-blue-400',
-  Concluído: 'border-l-emerald-400',
-  Bloqueado: 'border-l-rose-400',
+const statusPill: Record<ManagementFront['status'], string> = {
+  'Não iniciada': 'bg-zinc-100 text-zinc-600 border-zinc-200',
+  'Em andamento': 'bg-blue-50 text-blue-700 border-blue-200',
+  Bloqueada: 'bg-rose-50 text-rose-700 border-rose-200',
+  Concluída: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  Arquivada: 'bg-zinc-100 text-zinc-500 border-zinc-200',
 }
 
 const fcaStatusPill: Record<FCA['status'], string> = {
-  'Em andamento': 'bg-blue-100 text-blue-700',
-  Concluído: 'bg-emerald-100 text-emerald-700',
-  Bloqueado: 'bg-rose-100 text-rose-700',
+  'Em andamento': 'bg-blue-50 text-blue-700 border-blue-200',
+  Concluído: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  Bloqueado: 'bg-rose-50 text-rose-700 border-rose-200',
 }
 
-function formatDateShort(value: string) {
-  if (!value) return ''
+function formatDate(value: string) {
+  if (!value) return 'Sem prazo'
   return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' }).format(
     new Date(`${value}T12:00:00`),
   )
 }
 
-// ─── New Front Form ───────────────────────────────────────────────────────────
+function isOverdue(value: string, referenceTime: number) {
+  return Boolean(value && new Date(`${value}T23:59:59`).getTime() < referenceTime)
+}
 
-type NewFrontDraft = { name: string; type: ManagementFront['type']; temperature: ManagementFront['temperature'] }
+type NewFrontDraft = {
+  name: string
+  type: ManagementFront['type']
+  temperature: ManagementFront['temperature']
+}
 
-function NewFrontForm({ onCancel, onSave }: { onCancel: () => void; onSave: (draft: NewFrontDraft) => void }) {
-  const [draft, setDraft] = useState<NewFrontDraft>({ name: '', type: 'Projeto', temperature: 'Saudável' })
+function NewFrontForm({
+  onCancel,
+  onSave,
+}: {
+  onCancel: () => void
+  onSave: (draft: NewFrontDraft) => void
+}) {
+  const [draft, setDraft] = useState<NewFrontDraft>({
+    name: '',
+    type: 'Projeto',
+    temperature: 'Saudável',
+  })
   const nameRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => { nameRef.current?.focus() }, [])
+  useEffect(() => {
+    nameRef.current?.focus()
+  }, [])
 
   return (
     <form
-      className="mb-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-5"
-      onSubmit={e => {
-        e.preventDefault()
+      className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm"
+      onSubmit={event => {
+        event.preventDefault()
         if (!draft.name.trim()) return
         onSave(draft)
       }}
     >
-      <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-zinc-400">Nova frente</p>
-      <div className="grid gap-3 sm:grid-cols-3">
-        <label className="grid gap-1.5 sm:col-span-1">
-          <span className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Nome</span>
+      <div className="grid gap-3 md:grid-cols-[minmax(220px,1fr)_180px_170px_auto] md:items-end">
+        <label className="grid gap-1.5">
+          <span className="text-xs font-black uppercase tracking-wider text-zinc-400">Nome</span>
           <input
             ref={nameRef}
             required
             value={draft.name}
-            onChange={e => setDraft(d => ({ ...d, name: e.target.value }))}
-            placeholder="Nome da frente"
+            onChange={event => setDraft(current => ({ ...current, name: event.target.value }))}
+            placeholder="Ex.: Reestruturar onboarding"
             className={fieldClass}
           />
         </label>
         <label className="grid gap-1.5">
-          <span className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Tipo</span>
-          <select value={draft.type} onChange={e => setDraft(d => ({ ...d, type: e.target.value as ManagementFront['type'] }))} className={fieldClass}>
-            {(['Projeto', 'Processo', 'Risco', 'PDI', 'Governança', 'Oportunidade', 'Rotina'] as const).map(t => (
-              <option key={t} value={t}>{t}</option>
+          <span className="text-xs font-black uppercase tracking-wider text-zinc-400">Tipo</span>
+          <select
+            value={draft.type}
+            onChange={event => setDraft(current => ({ ...current, type: event.target.value as ManagementFront['type'] }))}
+            className={fieldClass}
+          >
+            {(['Projeto', 'Processo', 'Risco', 'PDI', 'Governança', 'Oportunidade', 'Rotina'] as const).map(item => (
+              <option key={item} value={item}>{item}</option>
             ))}
           </select>
         </label>
         <label className="grid gap-1.5">
-          <span className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Temperatura</span>
-          <select value={draft.temperature} onChange={e => setDraft(d => ({ ...d, temperature: e.target.value as ManagementFront['temperature'] }))} className={fieldClass}>
-            {frontTemperatures.map(t => <option key={t} value={t}>{t}</option>)}
+          <span className="text-xs font-black uppercase tracking-wider text-zinc-400">Saúde</span>
+          <select
+            value={draft.temperature}
+            onChange={event => setDraft(current => ({ ...current, temperature: event.target.value as ManagementFront['temperature'] }))}
+            className={fieldClass}
+          >
+            {frontTemperatures.map(item => <option key={item} value={item}>{item}</option>)}
           </select>
         </label>
-      </div>
-      <div className="mt-4 flex justify-end gap-2">
-        <button type="button" onClick={onCancel} className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-600 hover:bg-zinc-50 transition-colors">
-          Cancelar
-        </button>
-        <button type="submit" className="rounded-xl bg-zinc-900 px-5 py-2 text-sm font-bold text-white hover:bg-zinc-800 transition-colors">
-          Criar frente
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="rounded-xl border border-zinc-200 px-4 py-2.5 text-sm font-black text-zinc-600 hover:bg-zinc-50"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            className="rounded-xl bg-[var(--retro-wine)] px-4 py-2.5 text-sm font-black text-white hover:bg-[var(--retro-wine-hover)]"
+          >
+            Criar
+          </button>
+        </div>
       </div>
     </form>
   )
 }
 
-// ─── FCA Form ─────────────────────────────────────────────────────────────────
+function TaskRow({
+  task,
+  onChange,
+  onDelete,
+  referenceTime,
+}: {
+  task: Task
+  onChange: (task: Task) => void
+  onDelete: () => void
+  referenceTime: number
+}) {
+  const done = task.status === 'Concluída'
+  const overdue = isOverdue(task.dueDate, referenceTime) && !done
 
-function FcaForm({ onCancel, onSave }: { onCancel: () => void; onSave: (fca: FCA) => void }) {
-  const [draft, setDraft] = useState<FCA>(createEmptyFCA())
-  const set = <K extends keyof FCA>(key: K, val: FCA[K]) => setDraft(d => ({ ...d, [key]: val }))
+  return (
+    <div className="group grid gap-2 rounded-xl border border-zinc-100 bg-white px-3 py-2.5 sm:grid-cols-[auto_minmax(180px,1fr)_110px_120px_auto] sm:items-center">
+      <button
+        type="button"
+        aria-label={done ? 'Reabrir task' : 'Concluir task'}
+        onClick={() => onChange({ ...task, status: done ? 'Aberta' : 'Concluída', updatedAt: new Date().toISOString() })}
+        className={`grid h-5 w-5 place-items-center rounded-md border ${done ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-zinc-300 text-transparent hover:border-emerald-500'}`}
+      >
+        <Check size={12} strokeWidth={3} />
+      </button>
+      <p className={`min-w-0 truncate text-sm font-semibold ${done ? 'text-zinc-400 line-through' : 'text-zinc-800'}`}>
+        {task.text}
+      </p>
+      <span className={`inline-flex items-center gap-1 text-xs font-bold ${overdue ? 'text-rose-600' : 'text-zinc-500'}`}>
+        <CalendarDays size={12} />
+        {formatDate(task.dueDate)}
+      </span>
+      <select
+        value={task.status}
+        onChange={event => onChange({ ...task, status: event.target.value as Task['status'], updatedAt: new Date().toISOString() })}
+        className="rounded-lg border border-zinc-200 bg-zinc-50 px-2 py-1.5 text-xs font-bold text-zinc-600 outline-none focus:border-[var(--retro-wine)]"
+      >
+        {taskStatuses.map(item => <option key={item} value={item}>{item}</option>)}
+      </select>
+      <button
+        type="button"
+        aria-label="Excluir task"
+        onClick={onDelete}
+        className="justify-self-start rounded-lg p-1.5 text-zinc-300 hover:bg-rose-50 hover:text-rose-500 sm:justify-self-end"
+      >
+        <Trash2 size={15} />
+      </button>
+    </div>
+  )
+}
+
+function QuickAddTask({ frontId, onAdd }: { frontId: string; onAdd: (task: Task) => void }) {
+  const [text, setText] = useState('')
+  const [dueDate, setDueDate] = useState('')
 
   return (
     <form
-      className="mt-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-4"
-      onSubmit={e => {
-        e.preventDefault()
+      className="mt-3 grid gap-2 sm:grid-cols-[minmax(180px,1fr)_150px_auto]"
+      onSubmit={event => {
+        event.preventDefault()
+        const value = text.trim()
+        if (!value) return
+        onAdd(createEmptyTask({ text: value, dueDate, frontId }))
+        setText('')
+        setDueDate('')
+      }}
+    >
+      <input
+        value={text}
+        onChange={event => setText(event.target.value)}
+        placeholder="Adicionar próxima ação..."
+        className={fieldClass}
+      />
+      <input
+        type="date"
+        value={dueDate}
+        onChange={event => setDueDate(event.target.value)}
+        className={fieldClass}
+      />
+      <button
+        type="submit"
+        className="inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-black text-zinc-700 hover:bg-zinc-50"
+      >
+        <Plus size={15} />
+        Add
+      </button>
+    </form>
+  )
+}
+
+function FcaForm({ onCancel, onSave }: { onCancel: () => void; onSave: (fca: FCA) => void }) {
+  const [draft, setDraft] = useState<FCA>(() => createEmptyFCA())
+  const set = <K extends keyof FCA>(key: K, value: FCA[K]) => setDraft(current => ({ ...current, [key]: value }))
+
+  return (
+    <form
+      className="mt-3 rounded-2xl border border-zinc-200 bg-white p-4"
+      onSubmit={event => {
+        event.preventDefault()
         if (!draft.fact.trim() || !draft.action.trim()) return
         onSave({ ...draft, updatedAt: new Date().toISOString() })
       }}
     >
-      <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-zinc-400">Novo FCA</p>
       <div className="grid gap-3">
         <label className="grid gap-1.5">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Fato (o que aconteceu, com evidência)</span>
-          <textarea required rows={2} value={draft.fact} onChange={e => set('fact', e.target.value)} className={fieldClass} />
+          <span className="text-xs font-black uppercase tracking-wider text-zinc-400">Fato</span>
+          <textarea
+            required
+            rows={2}
+            value={draft.fact}
+            onChange={event => set('fact', event.target.value)}
+            placeholder="O que aconteceu, de forma observável?"
+            className={`${fieldClass} resize-none leading-6`}
+          />
         </label>
         <label className="grid gap-1.5">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Causa (por que aconteceu)</span>
-          <textarea rows={2} value={draft.cause} onChange={e => set('cause', e.target.value)} className={fieldClass} />
+          <span className="text-xs font-black uppercase tracking-wider text-zinc-400">Causa</span>
+          <textarea
+            rows={2}
+            value={draft.cause}
+            onChange={event => set('cause', event.target.value)}
+            placeholder="Por que aconteceu?"
+            className={`${fieldClass} resize-none leading-6`}
+          />
         </label>
         <label className="grid gap-1.5">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Ação (o que será feito)</span>
-          <textarea required rows={2} value={draft.action} onChange={e => set('action', e.target.value)} className={fieldClass} />
+          <span className="text-xs font-black uppercase tracking-wider text-zinc-400">Ação</span>
+          <textarea
+            required
+            rows={2}
+            value={draft.action}
+            onChange={event => set('action', event.target.value)}
+            placeholder="O que será feito?"
+            className={`${fieldClass} resize-none leading-6`}
+          />
         </label>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-3">
           <label className="grid gap-1.5">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Responsável</span>
-            <input value={draft.owner} onChange={e => set('owner', e.target.value)} className={fieldClass} />
+            <span className="text-xs font-black uppercase tracking-wider text-zinc-400">Responsável</span>
+            <input value={draft.owner} onChange={event => set('owner', event.target.value)} className={fieldClass} />
           </label>
           <label className="grid gap-1.5">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Prazo</span>
-            <input type="date" value={draft.dueDate} onChange={e => set('dueDate', e.target.value)} className={fieldClass} />
+            <span className="text-xs font-black uppercase tracking-wider text-zinc-400">Prazo</span>
+            <input type="date" value={draft.dueDate} onChange={event => set('dueDate', event.target.value)} className={fieldClass} />
+          </label>
+          <label className="grid gap-1.5">
+            <span className="text-xs font-black uppercase tracking-wider text-zinc-400">Status</span>
+            <select value={draft.status} onChange={event => set('status', event.target.value as FCA['status'])} className={fieldClass}>
+              {fcaStatuses.map(item => <option key={item} value={item}>{item}</option>)}
+            </select>
           </label>
         </div>
       </div>
       <div className="mt-3 flex justify-end gap-2">
-        <button type="button" onClick={onCancel} className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-600 hover:bg-zinc-50 transition-colors">
+        <button type="button" onClick={onCancel} className="rounded-xl border border-zinc-200 px-4 py-2 text-sm font-black text-zinc-600 hover:bg-zinc-50">
           Cancelar
         </button>
-        <button type="submit" className="rounded-xl bg-zinc-900 px-5 py-2 text-sm font-bold text-white hover:bg-zinc-800 transition-colors">
+        <button type="submit" className="rounded-xl bg-[var(--retro-wine)] px-4 py-2 text-sm font-black text-white hover:bg-[var(--retro-wine-hover)]">
           Salvar FCA
         </button>
       </div>
@@ -234,340 +322,34 @@ function FcaForm({ onCancel, onSave }: { onCancel: () => void; onSave: (fca: FCA
   )
 }
 
-// ─── FCA Item ─────────────────────────────────────────────────────────────────
-
-function FcaItem({ fca, onStatusChange, onDelete }: { fca: FCA; onStatusChange: (status: FCA['status']) => void; onDelete: () => void }) {
-  const [expanded, setExpanded] = useState(false)
-
+function FcaRow({ fca, onStatusChange, onDelete }: { fca: FCA; onStatusChange: (status: FCA['status']) => void; onDelete: () => void }) {
   return (
-    <div className={`rounded-xl border border-zinc-200 border-l-4 ${fcaBorderLeft[fca.status]} bg-white p-4`}>
-      <div className="flex items-start gap-2">
-        <button type="button" onClick={() => setExpanded(v => !v)} className="mt-0.5 shrink-0 text-zinc-400 hover:text-zinc-700 transition-colors">
-          {expanded ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
-        </button>
+    <div className="rounded-xl border border-zinc-100 bg-white p-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="text-sm font-semibold text-zinc-900 truncate">{fca.fact || '(sem fato)'}</p>
-            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${fcaStatusPill[fca.status]}`}>{fca.status}</span>
-            {fca.owner && <span className="text-xs text-zinc-500">{fca.owner}</span>}
-            {fca.dueDate && <span className="text-xs text-zinc-400">{formatDateShort(fca.dueDate)}</span>}
+          <p className="text-sm font-black text-zinc-900">{fca.fact || 'FCA sem fato'}</p>
+          {fca.action && <p className="mt-1 text-xs font-semibold leading-5 text-zinc-500">Ação: {fca.action}</p>}
+          <div className="mt-2 flex flex-wrap gap-2 text-xs font-bold text-zinc-500">
+            {fca.owner && <span>{fca.owner}</span>}
+            {fca.dueDate && <span>{formatDate(fca.dueDate)}</span>}
           </div>
-          {expanded && (
-            <div className="mt-3 grid gap-3 text-sm">
-              {fca.fact && (
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Fato</p>
-                  <p className="mt-1 text-sm text-zinc-700">{fca.fact}</p>
-                </div>
-              )}
-              {fca.cause && (
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Causa</p>
-                  <p className="mt-1 text-sm text-zinc-700">{fca.cause}</p>
-                </div>
-              )}
-              {fca.action && (
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Ação</p>
-                  <p className="mt-1 text-sm text-zinc-700">{fca.action}</p>
-                </div>
-              )}
-              <div className="mt-1 flex items-center gap-2 pt-1 border-t border-zinc-100">
-                <span className="text-xs font-semibold text-zinc-500">Status:</span>
-                <select
-                  value={fca.status}
-                  onChange={e => onStatusChange(e.target.value as FCA['status'])}
-                  className="rounded-lg border border-zinc-200 bg-white px-2 py-1 text-xs font-semibold outline-none focus:border-zinc-400"
-                >
-                  {fcaStatuses.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
-                <button
-                  type="button"
-                  onClick={onDelete}
-                  className="ml-auto flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold text-rose-500 hover:bg-rose-50 transition-colors"
-                >
-                  <Trash2 size={12} /> Excluir FCA
-                </button>
-              </div>
-            </div>
-          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <select
+            value={fca.status}
+            onChange={event => onStatusChange(event.target.value as FCA['status'])}
+            className={`rounded-full border px-2.5 py-1 text-xs font-black outline-none ${fcaStatusPill[fca.status]}`}
+          >
+            {fcaStatuses.map(item => <option key={item} value={item}>{item}</option>)}
+          </select>
+          <button type="button" aria-label="Excluir FCA" onClick={onDelete} className="rounded-lg p-1.5 text-zinc-300 hover:bg-rose-50 hover:text-rose-500">
+            <Trash2 size={15} />
+          </button>
         </div>
       </div>
     </div>
   )
 }
-
-// ─── Task Row ─────────────────────────────────────────────────────────────────
-
-function TaskRow({ task, onChange, onDelete, index }: { task: Task; onChange: (updated: Task) => void; onDelete: () => void; index: number }) {
-  const done = task.status === 'Concluída'
-  const config = taskStatusConfig[task.status]
-  const priorityCfg = priorityConfig[task.priority]
-  const typeCfg = typeConfig[task.type]
-  const effortCfg = effortConfig[task.effort]
-  const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && !done
-  
-  const completedSubtasks = task.subtasks.filter(s => s.done).length
-  const totalSubtasks = task.subtasks.length
-  
-  return (
-    <div className={`group flex flex-col gap-3 px-4 py-4 rounded-2xl transition-all duration-200 ${config.bg} hover:shadow-md border border-transparent hover:border-zinc-200`}>
-      {/* Linha principal */}
-      <div className="flex items-center gap-3">
-        {/* Drag handle */}
-        <button
-          type="button"
-          className="shrink-0 text-zinc-300 hover:text-zinc-500 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity"
-          aria-label="Arrastar tarefa"
-        >
-          <GripVertical size={14} />
-        </button>
-
-        {/* Checkbox customizado */}
-        <button
-          type="button"
-          aria-label={done ? 'Marcar como aberta' : 'Marcar como concluída'}
-          onClick={() => onChange({ ...task, status: done ? 'Aberta' : 'Concluída', updatedAt: new Date().toISOString() })}
-          className={`grid place-items-center rounded-full border-2 transition-all duration-200 ${
-            done 
-              ? 'border-emerald-500 bg-emerald-500 text-white scale-100' 
-              : 'border-zinc-300 bg-white text-transparent hover:border-emerald-400 hover:scale-105'
-          }`}
-          style={{ width: '24px', height: '24px' }}
-        >
-          <Check size={14} strokeWidth={3.5} />
-        </button>
-
-        {/* Texto da tarefa */}
-        <span className={`flex-1 min-w-0 text-sm font-semibold transition-all ${
-          done ? 'text-zinc-400 line-through' : 'text-zinc-800'
-        }`}>
-          {task.text}
-        </span>
-
-        {/* Prioridade badge */}
-        <span className={`hidden sm:inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold ${priorityCfg.bg} ${priorityCfg.text}`}>
-          <span className={`w-2 h-2 rounded-full ${priorityCfg.dot}`} />
-          {task.priority}
-        </span>
-
-        {/* Tipo badge */}
-        <span className={`hidden md:inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold ${typeCfg.bg} ${typeCfg.text}`}>
-          <span>{typeCfg.icon}</span>
-          {task.type}
-        </span>
-
-        {/* Esforço indicator */}
-        <div className="hidden lg:flex items-center gap-2 shrink-0" title={`Esforço: ${task.effort}`}>
-          <span className="text-xs font-semibold text-zinc-500">Esforço</span>
-          <div className="flex items-center gap-1">
-            <div className={`h-2 rounded-full ${effortCfg.color} ${effortCfg.width} transition-all`} />
-            <span className="text-xs font-bold text-zinc-600 w-6">{task.effort}</span>
-          </div>
-        </div>
-
-        {/* Status badge melhorado */}
-        <select
-          value={task.status}
-          onChange={e => onChange({ ...task, status: e.target.value as Task['status'], updatedAt: new Date().toISOString() })}
-          className={`shrink-0 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold outline-none cursor-pointer transition-all hover:scale-105 ${config.label}`}
-        >
-          <span className={`w-2 h-2 rounded-full ${config.dot}`} />
-          {task.status}
-        </select>
-
-        {/* Botão de excluir */}
-        <button
-          type="button"
-          aria-label="Excluir task"
-          onClick={onDelete}
-          className="shrink-0 p-2 text-zinc-300 opacity-0 group-hover:opacity-100 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
-        >
-          <Trash2 size={16} />
-        </button>
-      </div>
-
-      {/* Segunda linha com metadados */}
-      <div className="flex flex-wrap items-center gap-3 pl-10">
-        {/* Data com ícone */}
-        <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold ${
-          isOverdue ? 'bg-rose-50 text-rose-600' : 'bg-white text-zinc-500'
-        }`}>
-          <Calendar size={12} />
-          <span>{task.dueDate ? formatDateShort(task.dueDate) : 'Sem prazo'}</span>
-        </div>
-
-        {/* Responsável com ícone */}
-        <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white text-xs font-bold text-zinc-600">
-          <User size={12} className="text-zinc-400" />
-          <span>{task.assignee || 'Não atribuído'}</span>
-        </div>
-
-        {/* Subtasks progress */}
-        {totalSubtasks > 0 && (
-          <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-white">
-            <div className="flex items-center gap-1">
-              <div className="w-20 h-1.5 bg-zinc-100 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-emerald-500 rounded-full transition-all"
-                  style={{ width: `${(completedSubtasks / totalSubtasks) * 100}%` }}
-                />
-              </div>
-              <span className="text-xs font-bold text-zinc-600">{completedSubtasks}/{totalSubtasks}</span>
-            </div>
-          </div>
-        )}
-
-        {/* Tags */}
-        {task.tags.length > 0 && (
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {task.tags.slice(0, 3).map((tag, i) => (
-              <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-md bg-zinc-100 text-xs font-semibold text-zinc-600">
-                #{tag}
-              </span>
-            ))}
-            {task.tags.length > 3 && (
-              <span className="text-xs font-semibold text-zinc-400">+{task.tags.length - 3}</span>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
-// ─── Quick Add Task ───────────────────────────────────────────────────────────
-
-function QuickAddTask({ frontId, onAdd }: { frontId: string; onAdd: (task: Task) => void }) {
-  const [text, setText] = useState('')
-  const [dueDate, setDueDate] = useState('')
-  const [assignee, setAssignee] = useState('')
-  const [priority, setPriority] = useState<TaskPriority>('Média')
-  const [type, setType] = useState<TaskType>('Operacional')
-  const [effort, setEffort] = useState<TaskEffort>('M')
-  const [isExpanded, setIsExpanded] = useState(false)
-
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!text.trim()) return
-    onAdd(createEmptyTask({ text: text.trim(), dueDate, assignee, priority, type, effort, frontId }))
-    setText('')
-    setDueDate('')
-    setAssignee('')
-    setPriority('Média')
-    setType('Operacional')
-    setEffort('M')
-    setIsExpanded(false)
-  }
-
-  return (
-    <form onSubmit={submit} className="mt-3">
-      {!isExpanded ? (
-        <button
-          type="button"
-          onClick={() => setIsExpanded(true)}
-          className="w-full flex items-center gap-2 px-4 py-3 rounded-xl border-2 border-dashed border-zinc-200 text-zinc-400 hover:border-[var(--retro-wine)] hover:text-[var(--retro-wine)] transition-all group"
-        >
-          <Plus size={16} className="group-hover:scale-110 transition-transform" />
-          <span className="text-sm font-medium">Adicionar nova tarefa...</span>
-        </button>
-      ) : (
-        <div className="rounded-2xl border border-zinc-200 bg-gradient-to-br from-white to-zinc-50 p-4 shadow-md">
-          {/* Linha 1: Texto da task */}
-          <div className="mb-3">
-            <input
-              value={text}
-              onChange={e => setText(e.target.value)}
-              placeholder="O que precisa ser feito?"
-              autoFocus
-              className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--retro-wine)] focus:ring-2 focus:ring-[rgba(135,0,47,0.1)] placeholder:text-zinc-400 transition-all font-medium"
-            />
-          </div>
-          
-          {/* Linha 2: Metadados */}
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-3">
-            {/* Prioridade */}
-            <div className="relative">
-              <select
-                value={priority}
-                onChange={e => setPriority(e.target.value as TaskPriority)}
-                className="w-full appearance-none rounded-lg border border-zinc-200 bg-white pl-3 pr-8 py-2.5 text-xs font-bold outline-none focus:border-[var(--retro-wine)] transition-all cursor-pointer"
-              >
-                {taskPriorities.map(p => <option key={p} value={p}>{p}</option>)}
-              </select>
-              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400">▼</span>
-            </div>
-            
-            {/* Tipo */}
-            <div className="relative">
-              <select
-                value={type}
-                onChange={e => setType(e.target.value as TaskType)}
-                className="w-full appearance-none rounded-lg border border-zinc-200 bg-white pl-3 pr-8 py-2.5 text-xs font-bold outline-none focus:border-[var(--retro-wine)] transition-all cursor-pointer"
-              >
-                {taskTypes.map(t => <option key={t} value={t}>{t}</option>)}
-              </select>
-              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400">▼</span>
-            </div>
-            
-            {/* Esforço */}
-            <div className="relative">
-              <select
-                value={effort}
-                onChange={e => setEffort(e.target.value as TaskEffort)}
-                className="w-full appearance-none rounded-lg border border-zinc-200 bg-white pl-3 pr-8 py-2.5 text-xs font-bold outline-none focus:border-[var(--retro-wine)] transition-all cursor-pointer"
-              >
-                {taskEfforts.map(e => <option key={e} value={e}>{e}</option>)}
-              </select>
-              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400">▼</span>
-            </div>
-            
-            {/* Data */}
-            <div className="relative">
-              <input
-                type="date"
-                value={dueDate}
-                onChange={e => setDueDate(e.target.value)}
-                className="w-full rounded-lg border border-zinc-200 bg-white pl-3 pr-3 py-2.5 text-xs text-zinc-600 outline-none focus:border-[var(--retro-wine)] transition-all"
-              />
-            </div>
-            
-            {/* Responsável */}
-            <div className="relative">
-              <input
-                value={assignee}
-                onChange={e => setAssignee(e.target.value)}
-                placeholder="Quem?"
-                className="w-full rounded-lg border border-zinc-200 bg-white pl-3 pr-3 py-2.5 text-xs outline-none focus:border-[var(--retro-wine)] placeholder:text-zinc-400 transition-all"
-              />
-            </div>
-          </div>
-          
-          {/* Linha 3: Ações */}
-          <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => { setIsExpanded(false); setText(''); setDueDate(''); setAssignee(''); setPriority('Média'); setType('Operacional'); setEffort('M') }}
-              className="rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-600 hover:bg-zinc-50 transition-colors"
-            >
-              Cancelar
-            </button>
-            <button 
-              type="submit" 
-              disabled={!text.trim()}
-              className="rounded-xl bg-[var(--retro-wine)] px-5 py-2.5 text-sm font-bold text-white hover:bg-[var(--retro-wine-hover)] disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2 shadow-sm"
-            >
-              <Check size={16} />
-              Criar tarefa
-            </button>
-          </div>
-        </div>
-      )}
-    </form>
-  )
-}
-
-// ─── Front Card ───────────────────────────────────────────────────────────────
 
 function FrontCard({
   front,
@@ -577,214 +359,218 @@ function FrontCard({
   onAddTask,
   onUpdateTask,
   onDeleteTask,
+  referenceTime,
 }: {
   front: ManagementFront
   tasks: Task[]
-  onUpdateFront: (f: ManagementFront) => void
-  onArchive: (f: ManagementFront) => void
-  onAddTask: (t: Task) => void
-  onUpdateTask: (t: Task) => void
+  onUpdateFront: (front: ManagementFront) => void
+  onArchive: (front: ManagementFront) => void
+  onAddTask: (task: Task) => void
+  onUpdateTask: (task: Task) => void
   onDeleteTask: (id: string) => void
+  referenceTime: number
 }) {
   const [expanded, setExpanded] = useState(false)
   const [showFcaForm, setShowFcaForm] = useState(false)
-  const [editingName, setEditingName] = useState(false)
-  const [nameDraft, setNameDraft] = useState(front.name)
+  const frontTasks = tasks.filter(task => task.frontId === front.id)
+  const openTasks = frontTasks.filter(task => task.status !== 'Concluída')
+  const frontFcas = front.fcas ?? []
+  const openFcas = frontFcas.filter(fca => fca.status !== 'Concluído')
+  const overdue = isOverdue(front.nextCheckpoint, referenceTime)
 
-  const frontTasks = tasks.filter(t => t.frontId === front.id)
-
-  const saveName = () => {
-    if (nameDraft.trim() && nameDraft.trim() !== front.name) {
-      onUpdateFront({ ...front, name: nameDraft.trim(), updatedAt: new Date().toISOString() })
-    }
-    setEditingName(false)
+  const update = (updates: Partial<ManagementFront>) => {
+    onUpdateFront({ ...front, ...updates, updatedAt: new Date().toISOString() })
   }
 
   const addFca = (fca: FCA) => {
-    onUpdateFront({ ...front, fcas: [...(front.fcas ?? []), fca], updatedAt: new Date().toISOString() })
+    update({ fcas: [fca, ...frontFcas] })
     setShowFcaForm(false)
   }
 
-  const updateFcaStatus = (fcaId: string, status: FCA['status']) => {
-    onUpdateFront({
-      ...front,
-      fcas: (front.fcas ?? []).map(f => f.id === fcaId ? { ...f, status, updatedAt: new Date().toISOString() } : f),
-      updatedAt: new Date().toISOString(),
+  const updateFcaStatus = (id: string, status: FCA['status']) => {
+    update({
+      fcas: frontFcas.map(fca => (
+        fca.id === id ? { ...fca, status, updatedAt: new Date().toISOString() } : fca
+      )),
     })
   }
 
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-white overflow-hidden">
-      {/* Header row */}
-      <div
-        className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-zinc-50 transition-colors select-none"
-        onClick={() => setExpanded(v => !v)}
+    <article className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
+      <button
+        type="button"
+        onClick={() => setExpanded(value => !value)}
+        className="grid w-full gap-3 px-4 py-4 text-left transition hover:bg-zinc-50 lg:grid-cols-[minmax(260px,1fr)_160px_150px_130px_auto] lg:items-center"
       >
-        <span className={`h-2 w-2 shrink-0 rounded-full ${temperatureDot[front.temperature]}`} aria-hidden />
-
-        <div className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-bold text-zinc-900">{front.name}</span>
-          {front.description && !expanded && (
-            <span className="block truncate text-xs text-zinc-400 mt-0.5">{front.description}</span>
-          )}
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${temperatureDot[front.temperature]}`} />
+            <h2 className="truncate text-sm font-black text-zinc-950">{front.name || 'Frente sem nome'}</h2>
+          </div>
+          <p className="mt-1 truncate text-xs font-medium text-zinc-500">
+            {front.nextStep || front.description || 'Sem próximo passo definido'}
+          </p>
         </div>
-
-        <span className={`hidden shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold sm:inline-flex items-center gap-1.5 ${temperaturePill[front.temperature]}`}>
+        <span className={`w-fit rounded-full border px-2.5 py-1 text-xs font-black ${temperaturePill[front.temperature]}`}>
           {front.temperature}
         </span>
-
-        <select
-          value={front.temperature}
-          onClick={e => e.stopPropagation()}
-          onChange={e => {
-            e.stopPropagation()
-            onUpdateFront({ ...front, temperature: e.target.value as ManagementFront['temperature'], updatedAt: new Date().toISOString() })
-          }}
-          className="rounded-xl border border-zinc-200 bg-white px-2 py-1.5 text-xs font-semibold outline-none focus:border-zinc-400 sm:hidden"
-          aria-label="Temperatura"
-        >
-          {frontTemperatures.map(t => <option key={t} value={t}>{t}</option>)}
-        </select>
-
-        <span className="shrink-0 text-zinc-400">
-          {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+        <span className={`w-fit rounded-full border px-2.5 py-1 text-xs font-black ${statusPill[front.status]}`}>
+          {front.status}
         </span>
-      </div>
+        <span className={`inline-flex items-center gap-1 text-xs font-bold ${overdue && front.status !== 'Concluída' ? 'text-rose-600' : 'text-zinc-500'}`}>
+          <CalendarDays size={13} />
+          {formatDate(front.nextCheckpoint)}
+        </span>
+        <span className="justify-self-end text-zinc-400">
+          {expanded ? <ChevronDown size={17} /> : <ChevronRight size={17} />}
+        </span>
+      </button>
 
-      {/* Expanded body */}
       {expanded && (
-        <div className="border-t border-zinc-100 px-4 pb-5 pt-4">
-
-          {/* Name editing + description */}
-          <div className="flex items-start gap-3">
-            <div className="flex-1">
-              {editingName ? (
-                <input
-                  autoFocus
-                  value={nameDraft}
-                  onChange={e => setNameDraft(e.target.value)}
-                  onBlur={saveName}
-                  onKeyDown={e => { if (e.key === 'Enter') saveName(); if (e.key === 'Escape') { setNameDraft(front.name); setEditingName(false) } }}
-                  className="w-full rounded-xl border border-zinc-300 px-3 py-1.5 text-sm font-bold text-zinc-900 outline-none focus:border-zinc-500"
-                />
-              ) : (
-                <p className="text-sm text-zinc-700">
-                  {front.description || <span className="italic text-zinc-400">Sem descrição</span>}
-                </p>
-              )}
-            </div>
-            {!editingName && (
-              <button
-                type="button"
-                onClick={() => { setNameDraft(front.name); setEditingName(true) }}
-                className="shrink-0 rounded-lg px-2 py-1 text-xs font-semibold text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 transition-colors"
-              >
-                Editar nome
-              </button>
-            )}
+        <div className="border-t border-zinc-100 bg-zinc-50/60 px-4 py-4">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <label className="grid gap-1.5">
+              <span className="text-xs font-black uppercase tracking-wider text-zinc-400">Dono</span>
+              <input value={front.owner} onChange={event => update({ owner: event.target.value })} className={fieldClass} />
+            </label>
+            <label className="grid gap-1.5">
+              <span className="text-xs font-black uppercase tracking-wider text-zinc-400">Status</span>
+              <select value={front.status} onChange={event => update({ status: event.target.value as ManagementFront['status'] })} className={fieldClass}>
+                {frontStatuses.filter(item => item !== 'Arquivada').map(item => <option key={item} value={item}>{item}</option>)}
+              </select>
+            </label>
+            <label className="grid gap-1.5">
+              <span className="text-xs font-black uppercase tracking-wider text-zinc-400">Saúde</span>
+              <select value={front.temperature} onChange={event => update({ temperature: event.target.value as ManagementFront['temperature'] })} className={fieldClass}>
+                {frontTemperatures.map(item => <option key={item} value={item}>{item}</option>)}
+              </select>
+            </label>
+            <label className="grid gap-1.5">
+              <span className="text-xs font-black uppercase tracking-wider text-zinc-400">Checkpoint</span>
+              <input type="date" value={front.nextCheckpoint} onChange={event => update({ nextCheckpoint: event.target.value })} className={fieldClass} />
+            </label>
           </div>
 
-          {/* Temperature select (desktop, inside expanded) */}
-          <div className="mt-3 flex items-center gap-2">
-            <span className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Temperatura:</span>
-            <select
-              value={front.temperature}
-              onChange={e => onUpdateFront({ ...front, temperature: e.target.value as ManagementFront['temperature'], updatedAt: new Date().toISOString() })}
-              className="rounded-xl border border-zinc-200 bg-white px-2.5 py-1.5 text-xs font-semibold outline-none focus:border-zinc-400"
-            >
-              {frontTemperatures.map(t => <option key={t} value={t}>{t}</option>)}
-            </select>
-          </div>
+          <label className="mt-3 grid gap-1.5">
+            <span className="text-xs font-black uppercase tracking-wider text-zinc-400">Próximo passo</span>
+            <input
+              value={front.nextStep}
+              onChange={event => update({ nextStep: event.target.value })}
+              placeholder="Qual é a próxima ação objetiva?"
+              className={fieldClass}
+            />
+          </label>
 
-          {/* ── FCAs ── */}
+          <label className="mt-3 grid gap-1.5">
+            <span className="text-xs font-black uppercase tracking-wider text-zinc-400">Descrição</span>
+            <textarea
+              rows={2}
+              value={front.description}
+              onChange={event => update({ description: event.target.value })}
+              placeholder="Contexto curto da frente"
+              className={`${fieldClass} resize-none leading-6`}
+            />
+          </label>
+
           <div className="mt-5">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-bold uppercase tracking-widest text-zinc-400">FCAs</p>
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs font-black uppercase tracking-widest text-zinc-400">
+                FCAs {openFcas.length > 0 ? `(${openFcas.length} abertos)` : ''}
+              </p>
               <button
                 type="button"
-                onClick={() => setShowFcaForm(v => !v)}
-                className="flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold text-zinc-600 hover:bg-zinc-100 transition-colors"
+                onClick={() => setShowFcaForm(value => !value)}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-black text-zinc-600 hover:bg-zinc-50"
               >
-                <Plus size={12} /> Criar FCA
+                {showFcaForm ? <X size={13} /> : <Plus size={13} />}
+                {showFcaForm ? 'Fechar' : 'Registrar FCA'}
               </button>
             </div>
-
             {showFcaForm && <FcaForm onCancel={() => setShowFcaForm(false)} onSave={addFca} />}
-
-            {(front.fcas ?? []).length > 0 && (
-              <div className="grid gap-2">
-                {(front.fcas ?? []).map(fca => (
-                  <FcaItem
+            <div className="mt-2 grid gap-2">
+              {frontFcas.length > 0 ? (
+                frontFcas.map(fca => (
+                  <FcaRow
                     key={fca.id}
                     fca={fca}
                     onStatusChange={status => updateFcaStatus(fca.id, status)}
-                    onDelete={() => onUpdateFront({ ...front, fcas: (front.fcas ?? []).filter(f => f.id !== fca.id), updatedAt: new Date().toISOString() })}
+                    onDelete={() => update({ fcas: frontFcas.filter(item => item.id !== fca.id) })}
                   />
-                ))}
-              </div>
-            )}
-            {(front.fcas ?? []).length === 0 && !showFcaForm && (
-              <p className="text-xs text-zinc-400">Nenhum FCA registrado.</p>
-            )}
+                ))
+              ) : (
+                <p className="rounded-xl border border-dashed border-zinc-200 bg-white px-4 py-4 text-sm font-semibold text-zinc-400">
+                  Nenhum FCA registrado.
+                </p>
+              )}
+            </div>
           </div>
 
-          {/* ── Tasks ── */}
           <div className="mt-5">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <p className="text-xs font-bold uppercase tracking-widest text-zinc-400">Tasks</p>
-                {frontTasks.length > 0 && (
-                  <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-zinc-100 text-xs font-semibold text-zinc-600">
-                    {frontTasks.filter(t => t.status !== 'Concluída').length}/{frontTasks.length}
-                  </span>
-                )}
-              </div>
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs font-black uppercase tracking-widest text-zinc-400">
+                Tasks abertas {openTasks.length > 0 ? `(${openTasks.length})` : ''}
+              </p>
             </div>
-
-            {frontTasks.length > 0 && (
-              <div className="mt-1 grid gap-2">
-                {frontTasks.map((task, idx) => (
-                  <TaskRow key={task.id} task={task} index={idx} onChange={onUpdateTask} onDelete={() => onDeleteTask(task.id)} />
-                ))}
-              </div>
-            )}
-
-            {frontTasks.length === 0 && (
-              <div className="rounded-xl border border-dashed border-zinc-200 bg-zinc-50/50 p-4 text-center">
-                <p className="text-sm text-zinc-400">Nenhuma tarefa ainda</p>
-                <p className="text-xs text-zinc-300 mt-0.5">Adicione a primeira tarefa abaixo</p>
-              </div>
-            )}
-
+            <div className="mt-2 grid gap-2">
+              {frontTasks.length > 0 ? (
+                frontTasks.map(task => (
+                  <TaskRow
+                    key={task.id}
+                    task={task}
+                    referenceTime={referenceTime}
+                    onChange={onUpdateTask}
+                    onDelete={() => onDeleteTask(task.id)}
+                  />
+                ))
+              ) : (
+                <p className="rounded-xl border border-dashed border-zinc-200 bg-white px-4 py-4 text-sm font-semibold text-zinc-400">
+                  Nenhuma task ainda.
+                </p>
+              )}
+            </div>
             <QuickAddTask frontId={front.id} onAdd={onAddTask} />
           </div>
 
-          {/* ── Archive ── */}
           <div className="mt-5 flex justify-end">
             <button
               type="button"
               onClick={() => onArchive(front)}
-              className="flex items-center gap-1.5 rounded-xl border border-zinc-200 px-3 py-1.5 text-xs font-semibold text-zinc-500 hover:border-rose-200 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-black text-zinc-500 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
             >
-              <Archive size={12} /> Arquivar frente
+              <Archive size={13} />
+              Arquivar
             </button>
           </div>
         </div>
       )}
-    </div>
+    </article>
   )
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+function SummaryCard({ label, value, detail }: { label: string; value: number; detail: string }) {
+  return (
+    <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 shadow-sm">
+      <p className="text-xs font-black uppercase tracking-widest text-zinc-400">{label}</p>
+      <p className="mt-1 text-2xl font-black text-zinc-950">{value}</p>
+      <p className="mt-0.5 text-xs font-semibold text-zinc-500">{detail}</p>
+    </div>
+  )
+}
 
 export default function FrentesPage() {
   const [fronts, setFronts] = useState<ManagementFront[]>([])
   const [tasks, setTasks] = useState<Task[]>([])
   const [showNewForm, setShowNewForm] = useState(false)
+  const [search, setSearch] = useState('')
+  const [referenceTime] = useState(() => Date.now())
 
   useEffect(() => {
-    setFronts(loadFronts())
-    setTasks(loadTasks())
+    const frame = window.requestAnimationFrame(() => {
+      setFronts(loadFronts())
+      setTasks(loadTasks())
+    })
+
+    return () => window.cancelAnimationFrame(frame)
   }, [])
 
   const persistFronts = (next: ManagementFront[]) => {
@@ -797,91 +583,122 @@ export default function FrentesPage() {
     saveTasks(next)
   }
 
-  const createFront = ({ name, type, temperature }: { name: string; type: ManagementFront['type']; temperature: ManagementFront['temperature'] }) => {
-    const front = createEmptyFront()
-    front.name = name
-    front.type = type
-    front.temperature = temperature
+  const createFront = ({ name, type, temperature }: NewFrontDraft) => {
+    const now = new Date().toISOString()
+    const front = {
+      ...createEmptyFront(),
+      name: name.trim(),
+      type,
+      temperature,
+      updatedAt: now,
+    }
     persistFronts([front, ...fronts])
     setShowNewForm(false)
   }
 
   const updateFront = (updated: ManagementFront) => {
-    persistFronts(fronts.map(f => f.id === updated.id ? updated : f))
+    persistFronts(fronts.map(front => (front.id === updated.id ? updated : front)))
   }
 
   const archiveFront = (front: ManagementFront) => {
-    persistFronts(fronts.map(f => f.id === front.id ? { ...f, status: 'Arquivada', updatedAt: new Date().toISOString() } : f))
+    persistFronts(fronts.map(item => (
+      item.id === front.id ? { ...item, status: 'Arquivada', updatedAt: new Date().toISOString() } : item
+    )))
   }
 
-  const addTask = (task: Task) => {
-    persistTasks([...tasks, task])
-  }
+  const addTask = (task: Task) => persistTasks([...tasks, task])
+  const updateTask = (updated: Task) => persistTasks(tasks.map(task => (task.id === updated.id ? updated : task)))
+  const deleteTask = (id: string) => persistTasks(tasks.filter(task => task.id !== id))
 
-  const updateTask = (updated: Task) => {
-    persistTasks(tasks.map(t => t.id === updated.id ? updated : t))
-  }
+  const activeFronts = useMemo(() => fronts.filter(front => front.status !== 'Arquivada'), [fronts])
+  const filteredFronts = useMemo(() => {
+    const value = search.trim().toLocaleLowerCase('pt-BR')
+    if (!value) return activeFronts
 
-  const deleteTask = (id: string) => {
-    persistTasks(tasks.filter(t => t.id !== id))
-  }
+    return activeFronts.filter(front => {
+      const frontTasks = tasks.filter(task => task.frontId === front.id)
+      return [
+        front.name,
+        front.owner,
+        front.nextStep,
+        front.description,
+        ...frontTasks.map(task => task.text),
+      ].join(' ').toLocaleLowerCase('pt-BR').includes(value)
+    })
+  }, [activeFronts, search, tasks])
 
-  const activeFronts = useMemo(() => fronts.filter(f => f.status !== 'Arquivada'), [fronts])
-
-  const leaderFronts = useMemo(
-    () => activeFronts.filter(f => f.managerIntervention !== 'Nenhuma'),
-    [activeFronts],
-  )
-
-  const monitorFronts = useMemo(
-    () => activeFronts.filter(f => f.managerIntervention === 'Nenhuma'),
-    [activeFronts],
-  )
+  const actionFronts = filteredFronts.filter(front => (
+    front.temperature !== 'Saudável' || front.status === 'Bloqueada' || isOverdue(front.nextCheckpoint, referenceTime)
+  ))
+  const otherFronts = filteredFronts.filter(front => !actionFronts.some(item => item.id === front.id))
+  const openTasks = tasks.filter(task => task.status !== 'Concluída')
+  const overdueTasks = openTasks.filter(task => isOverdue(task.dueDate, referenceTime))
 
   return (
-    <main id="main-content" className="min-h-screen bg-[var(--retro-bg)] px-4 py-8 text-[var(--retro-ink)] sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-3xl">
+    <main id="main-content" className="min-h-screen bg-[var(--bg-secondary)] px-4 py-6 text-[var(--text-primary)] sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-5xl">
+        <header className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h1 className="text-3xl font-black tracking-tight text-zinc-950">Frentes</h1>
+              <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-zinc-500">
+                O básico bem feito: dono claro, saúde visível, próximo passo, prazo e tasks abertas.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowNewForm(value => !value)}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--retro-wine)] px-4 py-2.5 text-sm font-black text-white hover:bg-[var(--retro-wine-hover)]"
+            >
+              {showNewForm ? <X size={16} /> : <Plus size={16} />}
+              {showNewForm ? 'Cancelar' : 'Nova frente'}
+            </button>
+          </div>
 
-        {/* Page header */}
-        <div className="mb-6 flex items-center justify-between gap-4">
-          <h1 className="text-2xl font-bold text-zinc-950">Frentes</h1>
-          <button
-            type="button"
-            onClick={() => setShowNewForm(v => !v)}
-            className="inline-flex items-center gap-2 rounded-xl bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-zinc-800 transition-colors"
-          >
-            {showNewForm ? <X size={15} /> : <Plus size={15} />}
-            {showNewForm ? 'Cancelar' : 'Nova frente'}
-          </button>
-        </div>
+          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+            <SummaryCard label="Ativas" value={activeFronts.length} detail="não arquivadas" />
+            <SummaryCard label="Pedem ação" value={actionFronts.length} detail="atenção, crítica ou atraso" />
+            <SummaryCard label="Tasks abertas" value={openTasks.length} detail={`${overdueTasks.length} em atraso`} />
+          </div>
 
-        {/* New front form */}
+          <label className="mt-5 flex items-center gap-2 rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-zinc-400 focus-within:border-[var(--retro-wine)] focus-within:bg-white">
+            <Search size={17} />
+            <span className="sr-only">Buscar frentes</span>
+            <input
+              value={search}
+              onChange={event => setSearch(event.target.value)}
+              placeholder="Buscar por frente, dono, próximo passo ou task..."
+              className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-zinc-800 outline-none placeholder:text-zinc-400"
+            />
+          </label>
+        </header>
+
         {showNewForm && (
-          <NewFrontForm onCancel={() => setShowNewForm(false)} onSave={createFront} />
-        )}
-
-        {/* Empty state */}
-        {activeFronts.length === 0 && !showNewForm && (
-          <div className="rounded-2xl border border-zinc-200 bg-white p-12 text-center">
-            <p className="text-3xl mb-3">📋</p>
-            <p className="font-bold text-zinc-900 text-base">Nenhuma frente ainda</p>
-            <p className="mt-1 text-sm text-zinc-400">Crie a primeira frente para começar a organizar seu trabalho.</p>
+          <div className="mt-5">
+            <NewFrontForm onCancel={() => setShowNewForm(false)} onSave={createFront} />
           </div>
         )}
 
-        {/* "Você lidera" */}
-        {leaderFronts.length > 0 && (
-          <section className="mb-6">
-            <div className="flex items-center gap-3 mb-3">
-              <p className="text-xs font-bold uppercase tracking-widest text-zinc-400">Você lidera</p>
-              <div className="flex-1 h-px bg-zinc-100" />
+        {activeFronts.length === 0 && !showNewForm && (
+          <div className="mt-6 rounded-3xl border border-dashed border-zinc-300 bg-white p-12 text-center">
+            <p className="text-base font-black text-zinc-900">Nenhuma frente ainda</p>
+            <p className="mt-1 text-sm font-semibold text-zinc-400">Crie uma frente com dono, próximo passo e prazo.</p>
+          </div>
+        )}
+
+        {actionFronts.length > 0 && (
+          <section className="mt-6">
+            <div className="mb-3 flex items-center gap-3">
+              <h2 className="text-xs font-black uppercase tracking-widest text-zinc-400">Pedem ação</h2>
+              <div className="h-px flex-1 bg-zinc-200" />
             </div>
-            <div className="grid gap-2">
-              {leaderFronts.map(front => (
+            <div className="grid gap-3">
+              {actionFronts.map(front => (
                 <FrontCard
                   key={front.id}
                   front={front}
                   tasks={tasks}
+                  referenceTime={referenceTime}
                   onUpdateFront={updateFront}
                   onArchive={archiveFront}
                   onAddTask={addTask}
@@ -893,19 +710,19 @@ export default function FrentesPage() {
           </section>
         )}
 
-        {/* "Você monitora" */}
-        {monitorFronts.length > 0 && (
-          <section className="mb-6">
-            <div className="flex items-center gap-3 mb-3">
-              <p className="text-xs font-bold uppercase tracking-widest text-zinc-400">Você monitora</p>
-              <div className="flex-1 h-px bg-zinc-100" />
+        {otherFronts.length > 0 && (
+          <section className="mt-6">
+            <div className="mb-3 flex items-center gap-3">
+              <h2 className="text-xs font-black uppercase tracking-widest text-zinc-400">Em acompanhamento</h2>
+              <div className="h-px flex-1 bg-zinc-200" />
             </div>
-            <div className="grid gap-2">
-              {monitorFronts.map(front => (
+            <div className="grid gap-3">
+              {otherFronts.map(front => (
                 <FrontCard
                   key={front.id}
                   front={front}
                   tasks={tasks}
+                  referenceTime={referenceTime}
                   onUpdateFront={updateFront}
                   onArchive={archiveFront}
                   onAddTask={addTask}
@@ -916,7 +733,6 @@ export default function FrentesPage() {
             </div>
           </section>
         )}
-
       </div>
     </main>
   )

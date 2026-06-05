@@ -1,6 +1,14 @@
-```
 # Dependencies
 node_modules/
+
+# Next.js
+.next/
+out/
+next-env.d.ts
+tsconfig.tsbuildinfo
+
+# Vercel
+.vercel/
 
 # Environment variables
 .env
@@ -52,12 +60,6 @@ __pycache__/
 *.tar.xz
 *.tar.zst
 
-# Coverage reports
-coverage/
-htmlcov/
-
 # OS-specific files
 .DS_Store
 Thumbs.db
-
-```

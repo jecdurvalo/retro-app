@@ -62,10 +62,14 @@ export default function HojePage() {
   const [newTaskText, setNewTaskText] = useState('')
 
   useEffect(() => {
-    setFronts(loadFronts())
-    setTasks(loadTasks())
-    setPeople(loadPeople())
-    setSnapshots(loadRetroSnapshots())
+    const frame = window.requestAnimationFrame(() => {
+      setFronts(loadFronts())
+      setTasks(loadTasks())
+      setPeople(loadPeople())
+      setSnapshots(loadRetroSnapshots())
+    })
+
+    return () => window.cancelAnimationFrame(frame)
   }, [])
 
   // Frentes em atenção ou crítica
