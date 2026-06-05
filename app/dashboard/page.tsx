@@ -135,9 +135,11 @@ export default function HojePage() {
         {/* Header */}
         <header>
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-            {todayGreeting()}, Joana
+            Painel de hoje, Joana
           </h1>
-          <p className="mt-1 text-sm font-medium capitalize text-[var(--text-secondary)]">{formattedToday()}</p>
+          <p className="mt-1 text-sm font-medium capitalize text-[var(--text-secondary)]">
+            {todayGreeting()} · {formattedToday()}
+          </p>
         </header>
 
         <section className="rounded-2xl border border-[var(--border-medium)] bg-[var(--bg-primary)] p-5 shadow-[var(--shadow-sm)]">
@@ -145,10 +147,10 @@ export default function HojePage() {
             <div>
               <div className="flex items-center gap-2">
                 <ClipboardCheck size={19} className="text-[var(--retro-wine)]" />
-                <h2 className="text-sm font-black uppercase tracking-[0.12em] text-[var(--text-tertiary)]">Ritual de gestão</h2>
+                <h2 className="text-sm font-black uppercase tracking-[0.12em] text-[var(--text-tertiary)]">Revisão executiva do dia</h2>
               </div>
               <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-[var(--text-secondary)]">
-                O que revisar antes de cobrar: frentes, FCAs, decisões, retro e desenvolvimento.
+                O que precisa da sua atenção antes de cobrar: frentes, FCAs, decisões, retro e desenvolvimento do time.
               </p>
             </div>
             <Link
@@ -162,11 +164,11 @@ export default function HojePage() {
 
           <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
             {[
-              ['Frentes pedindo ação', urgentFronts.length, 'Saúde, bloqueio ou checkpoint'],
+              ['Frentes para destravar', urgentFronts.length, 'Saúde, bloqueio ou checkpoint'],
               ['FCAs abertos', openFcas.length, 'Fato, causa e ação'],
               ['Tasks atrasadas', overdueTasks.length, 'Cobrança objetiva'],
               ['Decisões pendentes', pendingDecisions.length, 'Trade-offs sem fechamento'],
-              ['Pessoas em foco', peopleInFocus.length, 'Carga, cuidado ou PDI'],
+              ['Pessoas em foco', peopleInFocus.length, 'Carga, cuidado ou desenvolvimento'],
             ].map(([label, value, detail]) => (
               <div key={String(label)} className="rounded-xl border border-[var(--border-light)] bg-[var(--bg-secondary)] p-3">
                 <p className="text-[11px] font-black uppercase tracking-wider text-[var(--text-tertiary)]">{String(label)}</p>
@@ -252,10 +254,10 @@ export default function HojePage() {
             <section className="rounded-2xl border border-[var(--border-medium)] bg-[var(--bg-primary)] p-5 shadow-[var(--shadow-sm)]">
               <div className="flex items-center gap-2 mb-4">
                 <AlertTriangle size={18} className="text-[var(--critical-text)]" />
-                <h2 className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--text-tertiary)]">Atenção agora</h2>
+                <h2 className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--text-tertiary)]">O que destravar agora</h2>
               </div>
               {urgentFronts.length === 0 ? (
-                <p className="text-sm text-[var(--text-tertiary)]">Nenhuma frente em atenção ou crítica no momento.</p>
+                <p className="text-sm text-[var(--text-tertiary)]">Nenhuma frente crítica, bloqueada ou vencida no momento.</p>
               ) : (
                 <ul className="space-y-2.5">
                   {urgentFronts.map(front => (
@@ -289,11 +291,11 @@ export default function HojePage() {
             <section className="rounded-2xl border border-[var(--border-medium)] bg-[var(--bg-primary)] p-5 shadow-[var(--shadow-sm)]">
               <div className="flex items-center gap-2 mb-4">
                 <CheckSquare size={18} className="text-[var(--retro-wine)]" />
-                <h2 className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--text-tertiary)]">Minhas tasks</h2>
+                <h2 className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--text-tertiary)]">Próximas ações</h2>
               </div>
 
               {openTasks.length === 0 ? (
-                <p className="mb-4 text-sm text-[var(--text-tertiary)]">Nenhuma task aberta. Adicione a primeira abaixo.</p>
+                <p className="mb-4 text-sm text-[var(--text-tertiary)]">Nenhuma ação aberta. Registre a próxima cobrança ou compromisso abaixo.</p>
               ) : (
                 <ul className="mb-4 space-y-2">
                   {openTasks.map(task => {
@@ -339,7 +341,7 @@ export default function HojePage() {
                   type="text"
                   value={newTaskText}
                   onChange={e => setNewTaskText(e.target.value)}
-                  placeholder="Nova task..."
+                  placeholder="Nova ação ou cobrança..."
                   className="min-w-0 flex-1 rounded-xl border border-[var(--border-medium)] bg-[var(--bg-primary)] px-3 py-2 text-sm outline-none placeholder:text-[var(--text-tertiary)] focus:border-[var(--retro-wine)] focus:ring-2 focus:ring-[var(--retro-wine-soft)]"
                 />
                 <button
@@ -347,7 +349,7 @@ export default function HojePage() {
                   className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--retro-wine)] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[var(--retro-wine-hover)]"
                 >
                   <Plus size={15} />
-                  Add
+                  Adicionar
                 </button>
               </form>
             </section>

@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from 'react'
 import {
+  CalendarDays,
   ChevronDown,
   ChevronRight,
   Plus,
+  Target,
   Trash2,
   X,
   UserRound,
@@ -21,9 +23,9 @@ import {
 
 // ─── Styles ──────────────────────────────────────────────────────────────────
 
-const cardClass = 'border border-zinc-200 rounded-2xl bg-white overflow-hidden'
+const cardClass = 'overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm shadow-zinc-950/5 transition hover:shadow-md'
 const fieldClass =
-  'w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-zinc-400 focus:ring-2 focus:ring-zinc-100'
+  'w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm font-semibold text-zinc-900 shadow-sm outline-none transition placeholder:text-zinc-400 focus:border-[var(--retro-wine)] focus:ring-4 focus:ring-[var(--retro-wine-tint)]'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -196,6 +198,12 @@ function PersonCard({
     { id: 'notas', label: 'Notas' },
     { id: 'feedback', label: 'Feedback' },
   ]
+  const profileSignals = [
+    { label: 'Próximo 1:1', value: formatDate(person.nextOneOnOne) },
+    { label: 'PDI', value: person.pdi.status },
+    { label: 'Notas', value: String(person.notes.length) },
+    { label: 'Feedbacks', value: String(person.feedback.length) },
+  ]
 
   return (
     <div className={cardClass}>
@@ -203,24 +211,32 @@ function PersonCard({
       <button
         type="button"
         onClick={() => setOpen(v => !v)}
-        className="flex w-full items-center gap-3 px-5 py-4 text-left transition hover:bg-zinc-50"
+        className="flex w-full items-center gap-3 border-l-4 border-[var(--retro-wine)] px-5 py-4 text-left transition hover:bg-zinc-50"
       >
-        <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-full text-sm font-bold ${avatarColor(person.id)}`}>
+        <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-sm font-black ${avatarColor(person.id)}`}>
           {initials(person.name) || <UserRound size={16} />}
         </span>
         <span className="min-w-0 flex-1">
           <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <span className="font-semibold text-zinc-900">{person.name || <span className="text-zinc-400">Sem nome</span>}</span>
+            <span className="font-black text-zinc-900">{person.name || <span className="text-zinc-400">Sem nome</span>}</span>
             {person.role && <span className="text-sm text-zinc-500">{person.role}</span>}
             {person.attention && (
-              <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${attentionTone[person.attention]}`}>
+              <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-black ${attentionTone[person.attention]}`}>
                 {person.attention}
               </span>
             )}
             {person.nextOneOnOne && (
-              <span className="text-xs text-zinc-400">1:1 {formatDate(person.nextOneOnOne)}</span>
+              <span className="inline-flex items-center gap-1 text-xs font-bold text-zinc-400">
+                <CalendarDays size={12} />
+                1:1 {formatDate(person.nextOneOnOne)}
+              </span>
             )}
           </span>
+          {(person.moment || person.nextLeap) && (
+            <span className="mt-1 block truncate text-xs font-semibold text-zinc-500">
+              {person.moment || person.nextLeap}
+            </span>
+          )}
         </span>
         {open
           ? <ChevronDown size={16} className="shrink-0 text-zinc-400" />
@@ -231,6 +247,51 @@ function PersonCard({
       {/* ── Expanded body ── */}
       {open && (
         <div className="border-t border-zinc-100">
+          <div className="bg-[linear-gradient(135deg,#fff,#f8f1f4)] px-5 py-5">
+            <div className="grid gap-4 lg:grid-cols-[1fr_260px]">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.14em] text-[var(--retro-wine)]">Perfil de desenvolvimento</p>
+                <h3 className="mt-2 text-xl font-black text-zinc-950">{person.name || 'Pessoa sem nome'}</h3>
+                <p className="mt-2 text-sm font-semibold leading-6 text-zinc-600">
+                  {person.moment || 'Defina o momento atual para transformar este card em um perfil de liderança.'}
+                </p>
+                {person.nextLeap && (
+                  <div className="mt-3 rounded-2xl border border-white bg-white/80 p-3 shadow-sm">
+                    <p className="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-zinc-400">
+                      <Target size={13} />
+                      Próximo salto
+                    </p>
+                    <p className="mt-1 text-sm font-bold leading-5 text-zinc-800">{person.nextLeap}</p>
+                  </div>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {profileSignals.map(signal => (
+                  <div key={signal.label} className="rounded-2xl border border-white bg-white/85 p-3 shadow-sm">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-zinc-400">{signal.label}</p>
+                    <p className="mt-1 truncate text-sm font-black text-zinc-900">{signal.value}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {(person.risks.filter(Boolean).length > 0 || person.levers.filter(Boolean).length > 0) && (
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                {person.risks.filter(Boolean).length > 0 && (
+                  <div className="rounded-2xl bg-white/80 p-3 shadow-sm">
+                    <p className="text-xs font-black uppercase tracking-wider text-rose-500">Riscos</p>
+                    <p className="mt-1 text-sm font-semibold leading-5 text-zinc-600">{person.risks.filter(Boolean).slice(0, 2).join(' · ')}</p>
+                  </div>
+                )}
+                {person.levers.filter(Boolean).length > 0 && (
+                  <div className="rounded-2xl bg-white/80 p-3 shadow-sm">
+                    <p className="text-xs font-black uppercase tracking-wider text-emerald-600">Alavancas</p>
+                    <p className="mt-1 text-sm font-semibold leading-5 text-zinc-600">{person.levers.filter(Boolean).slice(0, 2).join(' · ')}</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
           {/* Tab nav */}
           <div className="flex gap-1 px-5 pt-4 pb-0">
             {tabs.map(t => (
@@ -240,7 +301,7 @@ function PersonCard({
                 onClick={() => setTab(t.id)}
                 className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
                   tab === t.id
-                    ? 'bg-zinc-900 text-white'
+                    ? 'bg-[var(--retro-wine)] text-white shadow-sm'
                     : 'text-zinc-500 hover:text-zinc-800 hover:bg-zinc-100'
                 }`}
               >
@@ -249,7 +310,7 @@ function PersonCard({
             ))}
           </div>
 
-          <div className="bg-zinc-50/50 rounded-b-2xl p-5 mt-3">
+          <div className="mt-3 rounded-b-3xl bg-zinc-50/70 p-5">
             {/* ─── Aba: Geral ──────────────────────────────── */}
             {tab === 'geral' && (
               <div className="grid gap-4">
@@ -410,7 +471,7 @@ function PersonCard({
                 <button
                   type="button"
                   onClick={savePdi}
-                  className="justify-self-start rounded-xl bg-zinc-900 px-5 py-2 text-sm font-semibold text-white hover:bg-zinc-800"
+                  className="justify-self-start rounded-xl bg-[var(--retro-wine)] px-5 py-2 text-sm font-black text-white hover:bg-[var(--retro-wine-hover)]"
                 >
                   Salvar PDI
                 </button>
@@ -436,7 +497,7 @@ function PersonCard({
                   type="button"
                   onClick={addNote}
                   disabled={!noteText.trim()}
-                  className="justify-self-start rounded-xl bg-zinc-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40 hover:bg-zinc-800"
+                  className="justify-self-start rounded-xl bg-[var(--retro-wine)] px-4 py-2 text-sm font-black text-white hover:bg-[var(--retro-wine-hover)] disabled:opacity-40"
                 >
                   Salvar nota
                 </button>
@@ -466,7 +527,7 @@ function PersonCard({
                   type="button"
                   onClick={addFeedback}
                   disabled={!fbText.trim()}
-                  className="justify-self-start rounded-xl bg-zinc-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40 hover:bg-zinc-800"
+                  className="justify-self-start rounded-xl bg-[var(--retro-wine)] px-4 py-2 text-sm font-black text-white hover:bg-[var(--retro-wine-hover)] disabled:opacity-40"
                 >
                   Registrar feedback
                 </button>
@@ -509,7 +570,7 @@ function AddPersonForm({ onAdd, onCancel }: { onAdd: (p: LeadershipPerson) => vo
   return (
     <form
       onSubmit={submit}
-      className="border border-zinc-200 rounded-2xl bg-white p-5 grid gap-4 sm:grid-cols-[1fr_1fr_auto_auto_auto] sm:items-end"
+      className="grid gap-4 rounded-3xl border border-zinc-200 bg-white p-5 shadow-md shadow-zinc-950/5 sm:grid-cols-[1fr_1fr_auto_auto_auto] sm:items-end"
     >
       <div className="grid gap-1">
         <label className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400 mb-1">Nome</label>
@@ -553,9 +614,9 @@ function AddPersonForm({ onAdd, onCancel }: { onAdd: (p: LeadershipPerson) => vo
       </button>
       <button
         type="submit"
-        className="h-10 rounded-xl bg-zinc-900 px-5 text-sm font-semibold text-white hover:bg-zinc-800"
+        className="h-10 rounded-xl bg-[var(--retro-wine)] px-5 text-sm font-black text-white hover:bg-[var(--retro-wine-hover)]"
       >
-        Adicionar
+        Criar perfil
       </button>
     </form>
   )
@@ -624,25 +685,52 @@ export default function PessoasPage() {
 
   const diretos = people.filter(p => p.relationship === 'Liderado direto')
   const negocios = people.filter(p => p.relationship === 'Time negócios')
+  const pdisAtivos = people.filter(p => p.pdi.status !== 'Sem PDI').length
+  const umAUmAgendados = people.filter(p => p.nextOneOnOne).length
+  const pessoasEmAtencao = people.filter(p => p.attention === 'Cuidar' || p.attention === 'Monitorar carga').length
 
   return (
     <main
       id="main-content"
-      className="min-h-screen bg-zinc-50 px-4 py-6 text-zinc-900 sm:px-6 lg:px-8"
+      className="min-h-screen bg-[var(--bg-secondary)] px-4 py-6 text-zinc-900 sm:px-6 lg:px-8"
     >
-      <div className="mx-auto max-w-3xl">
+      <div className="mx-auto max-w-4xl">
         {/* Header */}
-        <header className="flex items-center justify-between gap-4">
-          <h1 className="text-2xl font-bold tracking-tight text-zinc-950">Time</h1>
-          {!showAddForm && (
-            <button
-              type="button"
-              onClick={() => setShowAddForm(true)}
-              className="inline-flex items-center gap-2 rounded-xl bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800"
-            >
-              <Plus size={15} /> Adicionar pessoa
-            </button>
-          )}
+        <header className="relative overflow-hidden rounded-3xl border border-zinc-200 bg-white p-5 shadow-md shadow-zinc-950/5 sm:p-6">
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-1.5 bg-[linear-gradient(90deg,var(--retro-blue),var(--retro-green),var(--retro-amber),var(--retro-wine))]" />
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.14em] text-[var(--retro-wine)]">Perfis do time</p>
+              <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-950">Pessoas e desenvolvimento</h1>
+              <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-zinc-500">
+                Acompanhe 1:1s, momento atual, PDI, riscos e alavancas para liderar com contexto e cobrar o essencial.
+              </p>
+            </div>
+            {!showAddForm && (
+              <button
+                type="button"
+                onClick={() => setShowAddForm(true)}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--retro-wine)] px-4 py-2.5 text-sm font-black text-white shadow-sm hover:bg-[var(--retro-wine-hover)]"
+              >
+                <Plus size={15} /> Nova pessoa
+              </button>
+            )}
+          </div>
+
+          <div className="mt-5 grid gap-3 sm:grid-cols-4">
+            {[
+              ['Pessoas', people.length, 'perfis acompanhados'],
+              ['1:1s', umAUmAgendados, 'com data marcada'],
+              ['PDIs', pdisAtivos, 'ativos ou em revisão'],
+              ['Atenção', pessoasEmAtencao, 'cuidado ou carga'],
+            ].map(([label, value, detail]) => (
+              <div key={String(label)} className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
+                <p className="text-xs font-black uppercase tracking-widest text-zinc-400">{String(label)}</p>
+                <p className="mt-1 text-2xl font-black text-zinc-950">{Number(value)}</p>
+                <p className="mt-0.5 text-xs font-semibold text-zinc-500">{String(detail)}</p>
+              </div>
+            ))}
+          </div>
         </header>
 
         {/* Add form */}
@@ -654,16 +742,18 @@ export default function PessoasPage() {
 
         {/* Empty state */}
         {people.length === 0 && !showAddForm && (
-          <div className="border border-zinc-200 rounded-2xl bg-white mt-8 grid place-items-center py-20 text-center">
+          <div className="mt-8 grid place-items-center rounded-3xl border border-dashed border-zinc-300 bg-white px-6 py-20 text-center shadow-sm">
             <UserRound size={36} className="text-zinc-300" />
-            <p className="mt-4 font-semibold text-zinc-800">Nenhuma pessoa ainda</p>
-            <p className="mt-1 text-sm text-zinc-400">Adicione os membros do seu time para começar.</p>
+            <p className="mt-4 font-black text-zinc-900">Nenhum perfil de pessoa ainda</p>
+            <p className="mt-1 max-w-sm text-sm font-semibold text-zinc-400">
+              Comece pelos liderados diretos: momento, próximo 1:1 e alavanca de desenvolvimento.
+            </p>
             <button
               type="button"
               onClick={() => setShowAddForm(true)}
-              className="mt-6 inline-flex items-center gap-2 rounded-xl bg-zinc-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-zinc-800"
+              className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[var(--retro-wine)] px-5 py-2.5 text-sm font-black text-white hover:bg-[var(--retro-wine-hover)]"
             >
-              <Plus size={15} /> Adicionar pessoa
+              <Plus size={15} /> Criar primeiro perfil
             </button>
           </div>
         )}
@@ -672,7 +762,7 @@ export default function PessoasPage() {
         {people.length > 0 && (
           <div className="mt-7 grid gap-8">
             <Section title="Liderados diretos" people={diretos} onChangePerson={updatePerson} onDeletePerson={deletePerson} />
-            <Section title="Time negócios" people={negocios} onChangePerson={updatePerson} onDeletePerson={deletePerson} />
+            <Section title="Parceiros de negócio" people={negocios} onChangePerson={updatePerson} onDeletePerson={deletePerson} />
           </div>
         )}
       </div>

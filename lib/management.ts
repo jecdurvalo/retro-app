@@ -55,6 +55,11 @@ export function loadRetroSnapshots() {
   }
 }
 
+export function saveRetroSnapshots(snapshots: RetroSnapshot[]) {
+  if (typeof window === 'undefined') return
+  window.localStorage.setItem(RETRO_SNAPSHOT_STORAGE_KEY, JSON.stringify(snapshots))
+}
+
 export function isOverdue(plan: ManagementPlan, today = new Date()) {
   if (!plan.dueDate || plan.status === 'done') return false
   return new Date(`${plan.dueDate}T23:59:59`) < today

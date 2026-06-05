@@ -7,7 +7,10 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
+  Eye,
+  EyeOff,
   Plus,
+  RotateCcw,
   Search,
   Trash2,
   X,
@@ -32,7 +35,7 @@ import {
 } from '@/lib/tasks'
 
 const fieldClass =
-  'w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm font-semibold text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-[var(--retro-wine)] focus:ring-4 focus:ring-[var(--retro-wine-tint)]'
+  'w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm font-semibold text-zinc-900 shadow-sm outline-none transition placeholder:text-zinc-400 focus:border-[var(--retro-wine)] focus:ring-4 focus:ring-[var(--retro-wine-tint)]'
 
 const temperatureDot: Record<ManagementFront['temperature'], string> = {
   Saudável: 'bg-emerald-500',
@@ -173,7 +176,7 @@ function TaskRow({
   const overdue = isOverdue(task.dueDate, referenceTime) && !done
 
   return (
-    <div className="group grid gap-2 rounded-xl border border-zinc-100 bg-white px-3 py-2.5 sm:grid-cols-[auto_minmax(180px,1fr)_110px_120px_auto] sm:items-center">
+    <div className="group grid gap-2 rounded-xl border border-zinc-100 bg-white px-3 py-2.5 shadow-[0_1px_0_rgba(0,0,0,0.03)] transition hover:border-zinc-200 hover:shadow-sm sm:grid-cols-[auto_minmax(180px,1fr)_110px_120px_auto] sm:items-center">
       <button
         type="button"
         aria-label={done ? 'Reabrir task' : 'Concluir task'}
@@ -253,7 +256,7 @@ function FcaForm({ onCancel, onSave }: { onCancel: () => void; onSave: (fca: FCA
 
   return (
     <form
-      className="mt-3 rounded-2xl border border-zinc-200 bg-white p-4"
+      className="mt-3 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm"
       onSubmit={event => {
         event.preventDefault()
         if (!draft.fact.trim() || !draft.action.trim()) return
@@ -356,6 +359,7 @@ function FrontCard({
   tasks,
   onUpdateFront,
   onArchive,
+  onDelete,
   onAddTask,
   onUpdateTask,
   onDeleteTask,
@@ -365,6 +369,7 @@ function FrontCard({
   tasks: Task[]
   onUpdateFront: (front: ManagementFront) => void
   onArchive: (front: ManagementFront) => void
+  onDelete: (front: ManagementFront) => void
   onAddTask: (task: Task) => void
   onUpdateTask: (task: Task) => void
   onDeleteTask: (id: string) => void
@@ -396,11 +401,12 @@ function FrontCard({
   }
 
   return (
-    <article className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
+    <article className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm ring-1 ring-transparent transition hover:shadow-md">
       <button
         type="button"
         onClick={() => setExpanded(value => !value)}
-        className="grid w-full gap-3 px-4 py-4 text-left transition hover:bg-zinc-50 lg:grid-cols-[minmax(260px,1fr)_160px_150px_130px_auto] lg:items-center"
+        className="grid w-full gap-3 border-l-4 px-4 py-4 text-left transition hover:bg-zinc-50 lg:grid-cols-[minmax(260px,1fr)_160px_150px_130px_auto] lg:items-center"
+        style={{ borderLeftColor: front.temperature === 'Crítica' ? '#f43f5e' : front.temperature === 'Atenção' ? '#f59e0b' : '#10b981' }}
       >
         <div className="min-w-0">
           <div className="flex items-center gap-2">
@@ -408,7 +414,7 @@ function FrontCard({
             <h2 className="truncate text-sm font-black text-zinc-950">{front.name || 'Frente sem nome'}</h2>
           </div>
           <p className="mt-1 truncate text-xs font-medium text-zinc-500">
-            {front.nextStep || front.description || 'Sem próximo passo definido'}
+            {front.nextStep || front.description || 'Próximo passo ainda não definido'}
           </p>
         </div>
         <span className={`w-fit rounded-full border px-2.5 py-1 text-xs font-black ${temperaturePill[front.temperature]}`}>
@@ -524,7 +530,7 @@ function FrontCard({
                 ))
               ) : (
                 <p className="rounded-xl border border-dashed border-zinc-200 bg-white px-4 py-4 text-sm font-semibold text-zinc-400">
-                  Nenhuma task ainda.
+                  Nenhuma ação registrada nesta frente.
                 </p>
               )}
             </div>
@@ -534,8 +540,16 @@ function FrontCard({
           <div className="mt-5 flex justify-end">
             <button
               type="button"
+              onClick={() => onDelete(front)}
+              className="mr-2 inline-flex items-center gap-1.5 rounded-xl border border-rose-100 bg-white px-3 py-2 text-xs font-black text-rose-500 hover:bg-rose-50"
+            >
+              <Trash2 size={13} />
+              Excluir
+            </button>
+            <button
+              type="button"
               onClick={() => onArchive(front)}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-black text-zinc-500 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-black text-zinc-500 hover:bg-zinc-50"
             >
               <Archive size={13} />
               Arquivar
@@ -561,6 +575,7 @@ export default function FrentesPage() {
   const [fronts, setFronts] = useState<ManagementFront[]>([])
   const [tasks, setTasks] = useState<Task[]>([])
   const [showNewForm, setShowNewForm] = useState(false)
+  const [showArchived, setShowArchived] = useState(false)
   const [search, setSearch] = useState('')
   const [referenceTime] = useState(() => Date.now())
 
@@ -606,11 +621,24 @@ export default function FrentesPage() {
     )))
   }
 
+  const restoreFront = (front: ManagementFront) => {
+    persistFronts(fronts.map(item => (
+      item.id === front.id ? { ...item, status: 'Em andamento', updatedAt: new Date().toISOString() } : item
+    )))
+  }
+
+  const deleteFront = (front: ManagementFront) => {
+    if (!window.confirm(`Excluir definitivamente "${front.name || 'esta frente'}"?`)) return
+    persistFronts(fronts.filter(item => item.id !== front.id))
+    persistTasks(tasks.filter(task => task.frontId !== front.id))
+  }
+
   const addTask = (task: Task) => persistTasks([...tasks, task])
   const updateTask = (updated: Task) => persistTasks(tasks.map(task => (task.id === updated.id ? updated : task)))
   const deleteTask = (id: string) => persistTasks(tasks.filter(task => task.id !== id))
 
   const activeFronts = useMemo(() => fronts.filter(front => front.status !== 'Arquivada'), [fronts])
+  const archivedFronts = useMemo(() => fronts.filter(front => front.status === 'Arquivada'), [fronts])
   const filteredFronts = useMemo(() => {
     const value = search.trim().toLocaleLowerCase('pt-BR')
     if (!value) return activeFronts
@@ -637,12 +665,14 @@ export default function FrentesPage() {
   return (
     <main id="main-content" className="min-h-screen bg-[var(--bg-secondary)] px-4 py-6 text-[var(--text-primary)] sm:px-6 lg:px-8">
       <div className="mx-auto max-w-5xl">
-        <header className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
+        <header className="relative overflow-hidden rounded-3xl border border-zinc-200 bg-white p-5 shadow-md shadow-zinc-950/5 sm:p-6">
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-1.5 bg-[linear-gradient(90deg,#87002f,#f59e0b,#10b981,#06b6d4)]" />
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <h1 className="text-3xl font-black tracking-tight text-zinc-950">Frentes</h1>
+              <p className="text-xs font-black uppercase tracking-[0.14em] text-[var(--retro-wine)]">Gestão das frentes</p>
+              <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-950">Frentes, FCAs e próximas ações</h1>
               <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-zinc-500">
-                O básico bem feito: dono claro, saúde visível, próximo passo, prazo e tasks abertas.
+                Uma visão simples para saber o que está saudável, o que precisa de intervenção e qual cobrança vem a seguir.
               </p>
             </div>
             <button
@@ -656,21 +686,31 @@ export default function FrentesPage() {
           </div>
 
           <div className="mt-5 grid gap-3 sm:grid-cols-3">
-            <SummaryCard label="Ativas" value={activeFronts.length} detail="não arquivadas" />
-            <SummaryCard label="Pedem ação" value={actionFronts.length} detail="atenção, crítica ou atraso" />
-            <SummaryCard label="Tasks abertas" value={openTasks.length} detail={`${overdueTasks.length} em atraso`} />
+            <SummaryCard label="Ativas" value={activeFronts.length} detail="em acompanhamento" />
+            <SummaryCard label="Pedem decisão" value={actionFronts.length} detail="atenção, crítica ou atraso" />
+            <SummaryCard label="Ações abertas" value={openTasks.length} detail={`${overdueTasks.length} em atraso`} />
           </div>
 
-          <label className="mt-5 flex items-center gap-2 rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-zinc-400 focus-within:border-[var(--retro-wine)] focus-within:bg-white">
-            <Search size={17} />
-            <span className="sr-only">Buscar frentes</span>
-            <input
-              value={search}
-              onChange={event => setSearch(event.target.value)}
-              placeholder="Buscar por frente, dono, próximo passo ou task..."
-              className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-zinc-800 outline-none placeholder:text-zinc-400"
-            />
-          </label>
+          <div className="mt-5 grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto]">
+            <label className="flex items-center gap-2 rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-zinc-400 focus-within:border-[var(--retro-wine)] focus-within:bg-white">
+              <Search size={17} />
+              <span className="sr-only">Buscar frentes</span>
+              <input
+                value={search}
+                onChange={event => setSearch(event.target.value)}
+                placeholder="Buscar por frente, dono, próximo passo ou ação..."
+                className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-zinc-800 outline-none placeholder:text-zinc-400"
+              />
+            </label>
+            <button
+              type="button"
+              onClick={() => setShowArchived(value => !value)}
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-black text-zinc-600 hover:bg-zinc-50"
+            >
+              {showArchived ? <EyeOff size={16} /> : <Eye size={16} />}
+              Arquivadas {archivedFronts.length > 0 ? `(${archivedFronts.length})` : ''}
+            </button>
+          </div>
         </header>
 
         {showNewForm && (
@@ -681,15 +721,15 @@ export default function FrentesPage() {
 
         {activeFronts.length === 0 && !showNewForm && (
           <div className="mt-6 rounded-3xl border border-dashed border-zinc-300 bg-white p-12 text-center">
-            <p className="text-base font-black text-zinc-900">Nenhuma frente ainda</p>
-            <p className="mt-1 text-sm font-semibold text-zinc-400">Crie uma frente com dono, próximo passo e prazo.</p>
+            <p className="text-base font-black text-zinc-900">Nenhuma frente ativa ainda</p>
+            <p className="mt-1 text-sm font-semibold text-zinc-400">Crie uma frente com dono, saúde, próximo passo e checkpoint.</p>
           </div>
         )}
 
         {actionFronts.length > 0 && (
           <section className="mt-6">
             <div className="mb-3 flex items-center gap-3">
-              <h2 className="text-xs font-black uppercase tracking-widest text-zinc-400">Pedem ação</h2>
+              <h2 className="text-xs font-black uppercase tracking-widest text-zinc-400">Precisam de intervenção</h2>
               <div className="h-px flex-1 bg-zinc-200" />
             </div>
             <div className="grid gap-3">
@@ -701,6 +741,7 @@ export default function FrentesPage() {
                   referenceTime={referenceTime}
                   onUpdateFront={updateFront}
                   onArchive={archiveFront}
+                  onDelete={deleteFront}
                   onAddTask={addTask}
                   onUpdateTask={updateTask}
                   onDeleteTask={deleteTask}
@@ -713,7 +754,7 @@ export default function FrentesPage() {
         {otherFronts.length > 0 && (
           <section className="mt-6">
             <div className="mb-3 flex items-center gap-3">
-              <h2 className="text-xs font-black uppercase tracking-widest text-zinc-400">Em acompanhamento</h2>
+              <h2 className="text-xs font-black uppercase tracking-widest text-zinc-400">Acompanhamento regular</h2>
               <div className="h-px flex-1 bg-zinc-200" />
             </div>
             <div className="grid gap-3">
@@ -725,12 +766,54 @@ export default function FrentesPage() {
                   referenceTime={referenceTime}
                   onUpdateFront={updateFront}
                   onArchive={archiveFront}
+                  onDelete={deleteFront}
                   onAddTask={addTask}
                   onUpdateTask={updateTask}
                   onDeleteTask={deleteTask}
                 />
               ))}
             </div>
+          </section>
+        )}
+
+        {showArchived && (
+          <section className="mt-6 rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm">
+            <div className="mb-3 flex items-center gap-3">
+              <h2 className="text-xs font-black uppercase tracking-widest text-zinc-400">Arquivadas</h2>
+              <div className="h-px flex-1 bg-zinc-200" />
+            </div>
+            {archivedFronts.length > 0 ? (
+              <div className="grid gap-2">
+                {archivedFronts.map(front => (
+                  <div key={front.id} className="grid gap-2 rounded-2xl border border-zinc-100 bg-zinc-50 px-4 py-3 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-black text-zinc-800">{front.name || 'Frente sem nome'}</p>
+                      <p className="mt-0.5 text-xs font-semibold text-zinc-500">{front.nextStep || front.description || 'Arquivada sem contexto registrado'}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => restoreFront(front)}
+                      className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-black text-zinc-600 hover:bg-zinc-50"
+                    >
+                      <RotateCcw size={13} />
+                      Restaurar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => deleteFront(front)}
+                      className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-rose-100 bg-white px-3 py-2 text-xs font-black text-rose-500 hover:bg-rose-50"
+                    >
+                      <Trash2 size={13} />
+                      Excluir
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="rounded-2xl border border-dashed border-zinc-200 px-4 py-6 text-sm font-semibold text-zinc-400">
+                Nenhuma frente arquivada.
+              </p>
+            )}
           </section>
         )}
       </div>

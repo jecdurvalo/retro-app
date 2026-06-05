@@ -9,16 +9,18 @@ import {
   Home,
   MessageSquareText,
   Plus,
+  TrendingUp,
   UserRound,
   UsersRound,
 } from 'lucide-react'
 import CaptureInput from './capture-input'
 
 const navigation = [
-  { label: 'Hoje', href: '/dashboard', icon: Home },
+  { label: 'Painel', href: '/dashboard', icon: Home },
   { label: 'Frentes', href: '/frentes', icon: GitBranch },
-  { label: 'Time', href: '/pessoas', icon: UsersRound },
+  { label: 'Pessoas', href: '/pessoas', icon: UsersRound },
   { label: 'Retro', href: '/retro', icon: MessageSquareText },
+  { label: 'Evolução', href: '/minha-evolucao', icon: TrendingUp },
 ]
 
 const publicPaths = new Set(['/', '/team'])
@@ -50,8 +52,8 @@ export default function LeadershipShell({ children }: { children: React.ReactNod
         <Link href="/management" className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition hover:bg-[var(--bg-secondary)]">
           <Image src="/retro-mark.svg" alt="" width={36} height={36} className="h-9 w-9 rounded-xl" />
           <div>
-            <p className="text-sm font-bold text-[var(--text-primary)]">Cockpit de Gestão</p>
-            <p className="mt-0.5 text-xs font-medium text-[var(--text-secondary)]">Liderança</p>
+            <p className="text-sm font-bold text-[var(--text-primary)]">Cockpit de Liderança</p>
+            <p className="mt-0.5 text-xs font-medium text-[var(--text-secondary)]">Gestão sênior</p>
           </div>
         </Link>
 
