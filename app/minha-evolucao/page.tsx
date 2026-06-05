@@ -16,16 +16,31 @@ import {
   UserRoundCheck,
   UsersRound,
   X,
+  TrendingUp,
+  Award,
+  Briefcase,
+  GraduationCap,
+  Heart,
+  Brain,
 } from 'lucide-react'
 import {
   createEmptyEvidence,
+  createEmptyCheckpoint,
   evolutionAreas,
   leadershipPrinciples,
-  loadEvolutionEvidence,
-  saveEvolutionEvidence,
+  loadEvolutionData,
+  saveEvidence,
+  saveCheckpoint,
+  updateSpecGoal,
+  addEvidenceToGoal,
+  getRecentCheckpoints,
+  getOverallProgress,
+  initialSpecGoals,
   type EvolutionArea,
   type EvolutionEvidence,
   type LeadershipPrinciple,
+  type Checkpoint,
+  type SpecGoal,
 } from '@/lib/evolution'
 import { loadFronts, type ManagementFront } from '@/lib/fronts'
 import { loadPeople, type LeadershipPerson } from '@/lib/people'
@@ -41,17 +56,13 @@ const areaTone: Record<EvolutionArea, string> = {
   'Governança e decisões': 'bg-emerald-50 text-emerald-700',
 }
 
-const commitments = [
-  'Delegar uma decisão transversal com contexto e critérios claros.',
-  'Proteger um bloco semanal para estratégia e governança.',
-  'Preparar um liderado para conduzir um alinhamento sênior.',
-]
-
-const centralizationPoints = [
-  { title: 'Decisões cross', description: 'Ainda concentro escolhas que podem ganhar donos claros.' },
-  { title: 'Priorização ambígua', description: 'Preciso explicitar critérios antes de cobrar autonomia.' },
-  { title: 'Alinhamentos sensíveis', description: 'Posso preparar o time para conduzir conversas difíceis.' },
-]
+const categoryConfig: Record<SpecGoal['category'], { icon: any; color: string; label: string }> = {
+  lideranca: { icon: UsersRound, color: 'text-violet-600', label: 'Liderança' },
+  estrategia: { icon: TrendingUp, color: 'text-amber-600', label: 'Estratégia' },
+  governanca: { icon: Briefcase, color: 'text-emerald-600', label: 'Governança' },
+  tecnico: { icon: Brain, color: 'text-blue-600', label: 'Técnico' },
+  cultura: { icon: Heart, color: 'text-rose-600', label: 'Cultura' },
+}
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }).format(
