@@ -3,6 +3,21 @@ export const TASKS_STORAGE_KEY = 'leadership-tasks'
 export const taskStatuses = ['Aberta', 'Em andamento', 'Concluída'] as const
 export type TaskStatus = (typeof taskStatuses)[number]
 
+export const taskPriorities = ['Baixa', 'Média', 'Alta', 'Urgente'] as const
+export type TaskPriority = (typeof taskPriorities)[number]
+
+export const taskTypes = ['Operacional', 'Estratégica', 'Desenvolvimento', 'Governança'] as const
+export type TaskType = (typeof taskTypes)[number]
+
+export const taskEfforts = ['XS', 'S', 'M', 'L', 'XL'] as const
+export type TaskEffort = (typeof taskEfforts)[number]
+
+export type Subtask = {
+  id: string
+  text: string
+  done: boolean
+}
+
 export type Task = {
   id: string
   text: string
@@ -11,6 +26,12 @@ export type Task = {
   assignee: string
   frontId: string
   fcaId: string
+  priority: TaskPriority
+  type: TaskType
+  effort: TaskEffort
+  tags: string[]
+  subtasks: Subtask[]
+  notes: string
   createdAt: string
   updatedAt: string
 }
@@ -25,6 +46,12 @@ export function createEmptyTask(overrides: Partial<Task> = {}): Task {
     assignee: '',
     frontId: '',
     fcaId: '',
+    priority: 'Média',
+    type: 'Operacional',
+    effort: 'M',
+    tags: [],
+    subtasks: [],
+    notes: '',
     createdAt: now,
     updatedAt: now,
     ...overrides,

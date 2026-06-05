@@ -33,7 +33,14 @@ import {
   loadTasks,
   saveTasks,
   taskStatuses,
+  taskPriorities,
+  taskTypes,
+  taskEfforts,
   type Task,
+  type TaskPriority,
+  type TaskType,
+  type TaskEffort,
+  type Subtask,
 } from '@/lib/tasks'
 
 const fieldClass =
@@ -73,6 +80,28 @@ const taskStatusConfig: Record<Task['status'], { bg: string; text: string; borde
     dot: 'bg-emerald-500',
     label: 'bg-emerald-100 text-emerald-700'
   },
+}
+
+const priorityConfig: Record<TaskPriority, { color: string; bg: string; text: string; dot: string }> = {
+  Baixa: { color: 'zinc', bg: 'bg-zinc-100', text: 'text-zinc-600', dot: 'bg-zinc-400' },
+  Média: { color: 'blue', bg: 'bg-blue-100', text: 'text-blue-700', dot: 'bg-blue-500' },
+  Alta: { color: 'orange', bg: 'bg-orange-100', text: 'text-orange-700', dot: 'bg-orange-500' },
+  Urgente: { color: 'rose', bg: 'bg-rose-100', text: 'text-rose-700', dot: 'bg-rose-500' },
+}
+
+const typeConfig: Record<TaskType, { bg: string; text: string; icon: string }> = {
+  Operacional: { bg: 'bg-slate-100', text: 'text-slate-700', icon: '⚙️' },
+  Estratégica: { bg: 'bg-purple-100', text: 'text-purple-700', icon: '🎯' },
+  Desenvolvimento: { bg: 'bg-green-100', text: 'text-green-700', icon: '🌱' },
+  Governança: { bg: 'bg-amber-100', text: 'text-amber-700', icon: '🛡️' },
+}
+
+const effortConfig: Record<TaskEffort, { color: string; width: string }> = {
+  XS: { color: 'bg-emerald-500', width: 'w-8' },
+  S: { color: 'bg-lime-500', width: 'w-12' },
+  M: { color: 'bg-yellow-500', width: 'w-16' },
+  L: { color: 'bg-orange-500', width: 'w-20' },
+  XL: { color: 'bg-rose-500', width: 'w-24' },
 }
 
 const fcaBorderLeft: Record<FCA['status'], string> = {
@@ -273,74 +302,136 @@ function FcaItem({ fca, onStatusChange, onDelete }: { fca: FCA; onStatusChange: 
 function TaskRow({ task, onChange, onDelete, index }: { task: Task; onChange: (updated: Task) => void; onDelete: () => void; index: number }) {
   const done = task.status === 'Concluída'
   const config = taskStatusConfig[task.status]
+  const priorityCfg = priorityConfig[task.priority]
+  const typeCfg = typeConfig[task.type]
+  const effortCfg = effortConfig[task.effort]
   const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && !done
   
+  const completedSubtasks = task.subtasks.filter(s => s.done).length
+  const totalSubtasks = task.subtasks.length
+  
   return (
-    <div className={`group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${config.bg} hover:shadow-sm border border-transparent hover:border-zinc-200`}>
-      {/* Drag handle (visual only for now) */}
-      <button
-        type="button"
-        className="shrink-0 text-zinc-300 hover:text-zinc-500 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity"
-        aria-label="Arrastar tarefa"
-      >
-        <GripVertical size={14} />
-      </button>
+    <div className={`group flex flex-col gap-3 px-4 py-4 rounded-2xl transition-all duration-200 ${config.bg} hover:shadow-md border border-transparent hover:border-zinc-200`}>
+      {/* Linha principal */}
+      <div className="flex items-center gap-3">
+        {/* Drag handle */}
+        <button
+          type="button"
+          className="shrink-0 text-zinc-300 hover:text-zinc-500 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity"
+          aria-label="Arrastar tarefa"
+        >
+          <GripVertical size={14} />
+        </button>
 
-      {/* Checkbox customizado */}
-      <button
-        type="button"
-        aria-label={done ? 'Marcar como aberta' : 'Marcar como concluída'}
-        onClick={() => onChange({ ...task, status: done ? 'Aberta' : 'Concluída', updatedAt: new Date().toISOString() })}
-        className={`grid place-items-center rounded-full border-2 transition-all duration-200 ${
-          done 
-            ? 'border-emerald-500 bg-emerald-500 text-white scale-100' 
-            : 'border-zinc-300 bg-white text-transparent hover:border-emerald-400 hover:scale-105'
-        }`}
-        style={{ width: '22px', height: '22px' }}
-      >
-        <Check size={12} strokeWidth={3.5} />
-      </button>
+        {/* Checkbox customizado */}
+        <button
+          type="button"
+          aria-label={done ? 'Marcar como aberta' : 'Marcar como concluída'}
+          onClick={() => onChange({ ...task, status: done ? 'Aberta' : 'Concluída', updatedAt: new Date().toISOString() })}
+          className={`grid place-items-center rounded-full border-2 transition-all duration-200 ${
+            done 
+              ? 'border-emerald-500 bg-emerald-500 text-white scale-100' 
+              : 'border-zinc-300 bg-white text-transparent hover:border-emerald-400 hover:scale-105'
+          }`}
+          style={{ width: '24px', height: '24px' }}
+        >
+          <Check size={14} strokeWidth={3.5} />
+        </button>
 
-      {/* Texto da tarefa */}
-      <span className={`flex-1 min-w-0 text-sm font-medium transition-all ${
-        done ? 'text-zinc-400 line-through' : 'text-zinc-800'
-      }`}>
-        {task.text}
-      </span>
+        {/* Texto da tarefa */}
+        <span className={`flex-1 min-w-0 text-sm font-semibold transition-all ${
+          done ? 'text-zinc-400 line-through' : 'text-zinc-800'
+        }`}>
+          {task.text}
+        </span>
 
-      {/* Data com ícone */}
-      <div className={`hidden sm:flex items-center gap-1.5 shrink-0 px-2.5 py-1 rounded-lg text-xs font-semibold ${
-        isOverdue ? 'bg-rose-50 text-rose-600' : 'bg-white text-zinc-500'
-      }`}>
-        <Calendar size={12} />
-        <span>{task.dueDate ? formatDateShort(task.dueDate) : '—'}</span>
+        {/* Prioridade badge */}
+        <span className={`hidden sm:inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold ${priorityCfg.bg} ${priorityCfg.text}`}>
+          <span className={`w-2 h-2 rounded-full ${priorityCfg.dot}`} />
+          {task.priority}
+        </span>
+
+        {/* Tipo badge */}
+        <span className={`hidden md:inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold ${typeCfg.bg} ${typeCfg.text}`}>
+          <span>{typeCfg.icon}</span>
+          {task.type}
+        </span>
+
+        {/* Esforço indicator */}
+        <div className="hidden lg:flex items-center gap-2 shrink-0" title={`Esforço: ${task.effort}`}>
+          <span className="text-xs font-semibold text-zinc-500">Esforço</span>
+          <div className="flex items-center gap-1">
+            <div className={`h-2 rounded-full ${effortCfg.color} ${effortCfg.width} transition-all`} />
+            <span className="text-xs font-bold text-zinc-600 w-6">{task.effort}</span>
+          </div>
+        </div>
+
+        {/* Status badge melhorado */}
+        <select
+          value={task.status}
+          onChange={e => onChange({ ...task, status: e.target.value as Task['status'], updatedAt: new Date().toISOString() })}
+          className={`shrink-0 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold outline-none cursor-pointer transition-all hover:scale-105 ${config.label}`}
+        >
+          <span className={`w-2 h-2 rounded-full ${config.dot}`} />
+          {task.status}
+        </select>
+
+        {/* Botão de excluir */}
+        <button
+          type="button"
+          aria-label="Excluir task"
+          onClick={onDelete}
+          className="shrink-0 p-2 text-zinc-300 opacity-0 group-hover:opacity-100 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
+        >
+          <Trash2 size={16} />
+        </button>
       </div>
 
-      {/* Responsável com ícone */}
-      <div className="hidden md:flex items-center gap-1.5 shrink-0 px-2.5 py-1 rounded-lg bg-white text-xs font-medium text-zinc-600">
-        <User size={12} className="text-zinc-400" />
-        <span className="truncate max-w-[120px]">{task.assignee || 'Não atribuído'}</span>
+      {/* Segunda linha com metadados */}
+      <div className="flex flex-wrap items-center gap-3 pl-10">
+        {/* Data com ícone */}
+        <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold ${
+          isOverdue ? 'bg-rose-50 text-rose-600' : 'bg-white text-zinc-500'
+        }`}>
+          <Calendar size={12} />
+          <span>{task.dueDate ? formatDateShort(task.dueDate) : 'Sem prazo'}</span>
+        </div>
+
+        {/* Responsável com ícone */}
+        <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white text-xs font-bold text-zinc-600">
+          <User size={12} className="text-zinc-400" />
+          <span>{task.assignee || 'Não atribuído'}</span>
+        </div>
+
+        {/* Subtasks progress */}
+        {totalSubtasks > 0 && (
+          <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-white">
+            <div className="flex items-center gap-1">
+              <div className="w-20 h-1.5 bg-zinc-100 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-emerald-500 rounded-full transition-all"
+                  style={{ width: `${(completedSubtasks / totalSubtasks) * 100}%` }}
+                />
+              </div>
+              <span className="text-xs font-bold text-zinc-600">{completedSubtasks}/{totalSubtasks}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Tags */}
+        {task.tags.length > 0 && (
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {task.tags.slice(0, 3).map((tag, i) => (
+              <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-md bg-zinc-100 text-xs font-semibold text-zinc-600">
+                #{tag}
+              </span>
+            ))}
+            {task.tags.length > 3 && (
+              <span className="text-xs font-semibold text-zinc-400">+{task.tags.length - 3}</span>
+            )}
+          </div>
+        )}
       </div>
-
-      {/* Status badge melhorado */}
-      <select
-        value={task.status}
-        onChange={e => onChange({ ...task, status: e.target.value as Task['status'], updatedAt: new Date().toISOString() })}
-        className={`shrink-0 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold outline-none cursor-pointer transition-all hover:scale-105 ${config.label}`}
-      >
-        <span className={`w-1.5 h-1.5 rounded-full ${config.dot}`} />
-        {task.status}
-      </select>
-
-      {/* Botão de excluir */}
-      <button
-        type="button"
-        aria-label="Excluir task"
-        onClick={onDelete}
-        className="shrink-0 p-1.5 text-zinc-300 opacity-0 group-hover:opacity-100 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
-      >
-        <Trash2 size={14} />
-      </button>
     </div>
   )
 }
@@ -351,15 +442,21 @@ function QuickAddTask({ frontId, onAdd }: { frontId: string; onAdd: (task: Task)
   const [text, setText] = useState('')
   const [dueDate, setDueDate] = useState('')
   const [assignee, setAssignee] = useState('')
+  const [priority, setPriority] = useState<TaskPriority>('Média')
+  const [type, setType] = useState<TaskType>('Operacional')
+  const [effort, setEffort] = useState<TaskEffort>('M')
   const [isExpanded, setIsExpanded] = useState(false)
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!text.trim()) return
-    onAdd(createEmptyTask({ text: text.trim(), dueDate, assignee, frontId }))
+    onAdd(createEmptyTask({ text: text.trim(), dueDate, assignee, priority, type, effort, frontId }))
     setText('')
     setDueDate('')
     setAssignee('')
+    setPriority('Média')
+    setType('Operacional')
+    setEffort('M')
     setIsExpanded(false)
   }
 
@@ -375,52 +472,94 @@ function QuickAddTask({ frontId, onAdd }: { frontId: string; onAdd: (task: Task)
           <span className="text-sm font-medium">Adicionar nova tarefa...</span>
         </button>
       ) : (
-        <div className="rounded-xl border border-zinc-200 bg-gradient-to-br from-white to-zinc-50 p-3 shadow-sm">
-          <div className="flex flex-col sm:flex-row gap-2">
+        <div className="rounded-2xl border border-zinc-200 bg-gradient-to-br from-white to-zinc-50 p-4 shadow-md">
+          {/* Linha 1: Texto da task */}
+          <div className="mb-3">
             <input
               value={text}
               onChange={e => setText(e.target.value)}
               placeholder="O que precisa ser feito?"
               autoFocus
-              className="flex-1 rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-[var(--retro-wine)] focus:ring-2 focus:ring-[rgba(135,0,47,0.1)] placeholder:text-zinc-400 transition-all"
+              className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-[var(--retro-wine)] focus:ring-2 focus:ring-[rgba(135,0,47,0.1)] placeholder:text-zinc-400 transition-all font-medium"
             />
-            <div className="flex gap-2">
-              <div className="relative">
-                <input
-                  type="date"
-                  value={dueDate}
-                  onChange={e => setDueDate(e.target.value)}
-                  className="rounded-lg border border-zinc-200 bg-white pl-8 pr-3 py-2.5 text-sm text-zinc-600 outline-none focus:border-[var(--retro-wine)] transition-all"
-                />
-                <Calendar size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
-              </div>
-              <div className="relative">
-                <input
-                  value={assignee}
-                  onChange={e => setAssignee(e.target.value)}
-                  placeholder="Quem?"
-                  className="w-full sm:w-32 rounded-lg border border-zinc-200 bg-white pl-8 pr-3 py-2.5 text-sm outline-none focus:border-[var(--retro-wine)] placeholder:text-zinc-400 transition-all"
-                />
-                <User size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => { setIsExpanded(false); setText(''); setDueDate(''); setAssignee('') }}
-                className="rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-sm font-semibold text-zinc-600 hover:bg-zinc-50 transition-colors"
+          </div>
+          
+          {/* Linha 2: Metadados */}
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-3">
+            {/* Prioridade */}
+            <div className="relative">
+              <select
+                value={priority}
+                onChange={e => setPriority(e.target.value as TaskPriority)}
+                className="w-full appearance-none rounded-lg border border-zinc-200 bg-white pl-3 pr-8 py-2.5 text-xs font-bold outline-none focus:border-[var(--retro-wine)] transition-all cursor-pointer"
               >
-                <X size={16} />
-              </button>
-              <button 
-                type="submit" 
-                disabled={!text.trim()}
-                className="rounded-lg bg-[var(--retro-wine)] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[var(--retro-wine-hover)] disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-1.5"
-              >
-                <Check size={16} />
-                <span className="hidden sm:inline">Criar</span>
-              </button>
+                {taskPriorities.map(p => <option key={p} value={p}>{p}</option>)}
+              </select>
+              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400">▼</span>
             </div>
+            
+            {/* Tipo */}
+            <div className="relative">
+              <select
+                value={type}
+                onChange={e => setType(e.target.value as TaskType)}
+                className="w-full appearance-none rounded-lg border border-zinc-200 bg-white pl-3 pr-8 py-2.5 text-xs font-bold outline-none focus:border-[var(--retro-wine)] transition-all cursor-pointer"
+              >
+                {taskTypes.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400">▼</span>
+            </div>
+            
+            {/* Esforço */}
+            <div className="relative">
+              <select
+                value={effort}
+                onChange={e => setEffort(e.target.value as TaskEffort)}
+                className="w-full appearance-none rounded-lg border border-zinc-200 bg-white pl-3 pr-8 py-2.5 text-xs font-bold outline-none focus:border-[var(--retro-wine)] transition-all cursor-pointer"
+              >
+                {taskEfforts.map(e => <option key={e} value={e}>{e}</option>)}
+              </select>
+              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400">▼</span>
+            </div>
+            
+            {/* Data */}
+            <div className="relative">
+              <input
+                type="date"
+                value={dueDate}
+                onChange={e => setDueDate(e.target.value)}
+                className="w-full rounded-lg border border-zinc-200 bg-white pl-3 pr-3 py-2.5 text-xs text-zinc-600 outline-none focus:border-[var(--retro-wine)] transition-all"
+              />
+            </div>
+            
+            {/* Responsável */}
+            <div className="relative">
+              <input
+                value={assignee}
+                onChange={e => setAssignee(e.target.value)}
+                placeholder="Quem?"
+                className="w-full rounded-lg border border-zinc-200 bg-white pl-3 pr-3 py-2.5 text-xs outline-none focus:border-[var(--retro-wine)] placeholder:text-zinc-400 transition-all"
+              />
+            </div>
+          </div>
+          
+          {/* Linha 3: Ações */}
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => { setIsExpanded(false); setText(''); setDueDate(''); setAssignee(''); setPriority('Média'); setType('Operacional'); setEffort('M') }}
+              className="rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-600 hover:bg-zinc-50 transition-colors"
+            >
+              Cancelar
+            </button>
+            <button 
+              type="submit" 
+              disabled={!text.trim()}
+              className="rounded-xl bg-[var(--retro-wine)] px-5 py-2.5 text-sm font-bold text-white hover:bg-[var(--retro-wine-hover)] disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2 shadow-sm"
+            >
+              <Check size={16} />
+              Criar tarefa
+            </button>
           </div>
         </div>
       )}
