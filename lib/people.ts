@@ -1,4 +1,10 @@
+import { supabase } from '@/lib/supabase'
+
 export const PEOPLE_STORAGE_KEY = 'leadership-people'
+/** People normally live in Supabase (table `leadership_people`). This key holds
+ * pre-existing local data to migrate once Supabase works, and also doubles as a
+ * fallback store whenever Supabase is unreachable (e.g. table not created yet). */
+const MIGRATION_FLAG_KEY = 'leadership-people-migrated-to-supabase'
 
 export const attentionTypes = ['Dar autonomia', 'Desafiar', 'Cuidar', 'Desenvolver', 'Monitorar carga'] as const
 export type AttentionType = (typeof attentionTypes)[number]
@@ -144,14 +150,59 @@ export function newChecklistItem(text: string): ChecklistItem {
 
 export const initialPeople: LeadershipPerson[] = []
 
-export function loadPeople(): LeadershipPerson[] {
+function readLocalPeople(): LeadershipPerson[] {
   if (typeof window === 'undefined') return []
   try {
-    const value = JSON.parse(localStorage.getItem(PEOPLE_STORAGE_KEY) || 'null')
+    const value = JSON.parse(window.localStorage.getItem(PEOPLE_STORAGE_KEY) || 'null')
     return Array.isArray(value) ? value.map(normalizePerson) : []
-  } catch { return [] }
+  } catch {
+    return []
+  }
 }
 
-export function savePeople(people: LeadershipPerson[]) {
-  if (typeof window !== 'undefined') window.localStorage.setItem(PEOPLE_STORAGE_KEY, JSON.stringify(people))
+function writeLocalPeople(people: LeadershipPerson[]) {
+  if (typeof window === 'undefined') return
+  window.localStorage.setItem(PEOPLE_STORAGE_KEY, JSON.stringify(people))
+}
+
+export async function loadPeople(): Promise<LeadershipPerson[]> {
+  const { data, error } = await supabase.from('leadership_people').select('id, data')
+
+  if (error) {
+    // Supabase unreachable (e.g. table not created yet) — use local storage.
+    return readLocalPeople()
+  }
+
+  const people = (data ?? []).map(row => normalizePerson(row.data as Partial<LeadershipPerson>))
+  if (people.length > 0) return people
+
+  // Supabase works but has nothing yet — migrate pre-existing local data once.
+  if (typeof window !== 'undefined' && !window.localStorage.getItem(MIGRATION_FLAG_KEY)) {
+    const legacy = readLocalPeople()
+    window.localStorage.setItem(MIGRATION_FLAG_KEY, '1')
+    if (legacy.length > 0) {
+      await savePeople(legacy)
+      return legacy
+    }
+  }
+
+  return people
+}
+
+export async function savePeople(people: LeadershipPerson[]) {
+  // Write to local storage first so the fallback is always current even if Supabase fails.
+  writeLocalPeople(people)
+
+  if (people.length === 0) {
+    await supabase.from('leadership_people').delete().neq('id', '')
+    return
+  }
+
+  const now = new Date().toISOString()
+  await supabase
+    .from('leadership_people')
+    .upsert(people.map(person => ({ id: person.id, data: person, updated_at: now })), { onConflict: 'id' })
+
+  const ids = people.map(person => person.id)
+  await supabase.from('leadership_people').delete().not('id', 'in', `(${ids.join(',')})`)
 }

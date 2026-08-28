@@ -170,11 +170,16 @@ export default function PersonProfilePage() {
   const [schedulingOneOnOne, setSchedulingOneOnOne] = useState(false)
 
   useEffect(() => {
-    const frame = window.requestAnimationFrame(() => {
-      setPeople(loadPeople())
-      setFronts(loadFronts())
-    })
-    return () => window.cancelAnimationFrame(frame)
+    let active = true
+    ;(async () => {
+      const [peopleData, frontsData] = await Promise.all([loadPeople(), loadFronts()])
+      if (!active) return
+      setPeople(peopleData)
+      setFronts(frontsData)
+    })()
+    return () => {
+      active = false
+    }
   }, [])
 
   const person = useMemo(() => people?.find(p => p.id === params.id) ?? null, [people, params.id])
@@ -183,15 +188,15 @@ export default function PersonProfilePage() {
     if (!person || !people) return
     const next = people.map(p => (p.id === person.id ? { ...p, ...updates, updatedAt: new Date().toISOString() } : p))
     setPeople(next)
-    savePeople(next)
+    void savePeople(next)
     setSavedLabel('Salvo automaticamente agora')
     window.setTimeout(() => setSavedLabel('Salvo automaticamente'), 1500)
   }
 
-  function deletePerson() {
+  async function deletePerson() {
     if (!person || !people) return
     if (!window.confirm(`Remover ${person.name || 'esta pessoa'}?`)) return
-    savePeople(people.filter(p => p.id !== person.id))
+    await savePeople(people.filter(p => p.id !== person.id))
     router.push('/pessoas')
   }
 

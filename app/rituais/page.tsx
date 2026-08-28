@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Select } from '@/components/ui/select'
 import {
   ArrowRight,
@@ -244,10 +244,19 @@ function RitualModal({
 }
 
 export default function RituaisPage() {
-  const [rituals, setRituals] = useState<LeadershipRitual[]>(loadRituals)
-  const [fronts] = useState<ManagementFront[]>(loadFronts)
-  const [people] = useState<LeadershipPerson[]>(loadPeople)
-  const [monthlyClose, setMonthlyClose] = useState<MonthlyClose>(loadMonthlyClose)
+  const [rituals, setRituals] = useState<LeadershipRitual[]>([])
+  const [fronts, setFronts] = useState<ManagementFront[]>([])
+  const [people, setPeople] = useState<LeadershipPerson[]>([])
+  const [monthlyClose, setMonthlyClose] = useState<MonthlyClose>({
+    progress: 0,
+    checklist: [],
+    improved: '',
+    worsened: '',
+    stalled: '',
+    leadershipAction: '',
+    nextSteps: [],
+    updatedAt: '',
+  })
   const [search, setSearch] = useState('')
   const [showFilters, setShowFilters] = useState(false)
   const [typeFilter, setTypeFilter] = useState('')
@@ -256,6 +265,26 @@ export default function RituaisPage() {
   const [showRitualModal, setShowRitualModal] = useState(false)
   const [editingClose, setEditingClose] = useState(false)
   const [feedback, setFeedback] = useState('')
+
+  useEffect(() => {
+    let active = true
+    ;(async () => {
+      const [ritualsData, frontsData, peopleData, monthlyCloseData] = await Promise.all([
+        loadRituals(),
+        loadFronts(),
+        loadPeople(),
+        loadMonthlyClose(),
+      ])
+      if (!active) return
+      setRituals(ritualsData)
+      setFronts(frontsData)
+      setPeople(peopleData)
+      setMonthlyClose(monthlyCloseData)
+    })()
+    return () => {
+      active = false
+    }
+  }, [])
 
   const flash = (message: string) => {
     setFeedback(message)
@@ -295,7 +324,7 @@ export default function RituaisPage() {
   const createRitual = (ritual: LeadershipRitual) => {
     const next = [ritual, ...rituals]
     setRituals(next)
-    saveRituals(next)
+    void saveRituals(next)
     setShowRitualModal(false)
     flash('Ritual criado e salvo.')
   }
@@ -308,7 +337,7 @@ export default function RituaisPage() {
     const progress = monthlyClose.checklist.length ? Math.round((completed / monthlyClose.checklist.length) * 100) : 0
     const next = { ...monthlyClose, progress, updatedAt: new Date().toISOString() }
     setMonthlyClose(next)
-    saveMonthlyClose(next)
+    void saveMonthlyClose(next)
     setEditingClose(false)
     flash('Fechamento mensal salvo.')
   }

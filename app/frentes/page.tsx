@@ -754,22 +754,26 @@ export default function FrentesPage() {
   const [referenceTime] = useState(() => Date.now())
 
   useEffect(() => {
-    const frame = window.requestAnimationFrame(() => {
-      setFronts(loadFronts())
-      setTasks(loadTasks())
-    })
-
-    return () => window.cancelAnimationFrame(frame)
+    let active = true
+    ;(async () => {
+      const [frontsData, tasksData] = await Promise.all([loadFronts(), loadTasks()])
+      if (!active) return
+      setFronts(frontsData)
+      setTasks(tasksData)
+    })()
+    return () => {
+      active = false
+    }
   }, [])
 
   const persistFronts = (next: ManagementFront[]) => {
     setFronts(next)
-    saveFronts(next)
+    void saveFronts(next)
   }
 
   const persistTasks = (next: Task[]) => {
     setTasks(next)
-    saveTasks(next)
+    void saveTasks(next)
   }
 
   const createFront = ({ name, type, temperature }: NewFrontDraft) => {

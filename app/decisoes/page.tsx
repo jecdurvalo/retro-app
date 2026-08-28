@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Select } from '@/components/ui/select'
 import {
   AlertTriangle,
@@ -244,13 +244,26 @@ function DecisionModal({
 }
 
 export default function DecisoesPage() {
-  const [decisions, setDecisions] = useState<LeadershipDecision[]>(loadDecisions)
-  const [fronts] = useState<ManagementFront[]>(loadFronts)
+  const [decisions, setDecisions] = useState<LeadershipDecision[]>([])
+  const [fronts, setFronts] = useState<ManagementFront[]>([])
   const [search, setSearch] = useState('')
   const [filters, setFilters] = useState<Filters>(emptyFilters)
   const [showFilters, setShowFilters] = useState(false)
   const [editing, setEditing] = useState<LeadershipDecision | null>(null)
   const [feedback, setFeedback] = useState('')
+
+  useEffect(() => {
+    let active = true
+    ;(async () => {
+      const [decisionsData, frontsData] = await Promise.all([loadDecisions(), loadFronts()])
+      if (!active) return
+      setDecisions(decisionsData)
+      setFronts(frontsData)
+    })()
+    return () => {
+      active = false
+    }
+  }, [])
 
   const filtered = useMemo(() => {
     const term = search.trim().toLocaleLowerCase('pt-BR')
@@ -280,7 +293,7 @@ export default function DecisoesPage() {
       ? decisions.map(item => item.id === decision.id ? decision : item)
       : [decision, ...decisions]
     setDecisions(next)
-    saveDecisions(next)
+    void saveDecisions(next)
     setEditing(null)
     setFeedback('Decisão salva.')
     window.setTimeout(() => setFeedback(''), 2200)

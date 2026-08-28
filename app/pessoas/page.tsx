@@ -147,17 +147,19 @@ export default function PessoasPage() {
   const [people, setPeople] = useState<LeadershipPerson[]>([])
 
   useEffect(() => {
-    const frame = window.requestAnimationFrame(() => {
-      setPeople(loadPeople())
+    let active = true
+    loadPeople().then(value => {
+      if (active) setPeople(value)
     })
-
-    return () => window.cancelAnimationFrame(frame)
+    return () => {
+      active = false
+    }
   }, [])
 
   function addPerson(p: LeadershipPerson) {
     const next = [...people, p]
     setPeople(next)
-    savePeople(next)
+    void savePeople(next)
   }
 
   const diretos = people.filter(p => p.relationship === 'Liderado direto')

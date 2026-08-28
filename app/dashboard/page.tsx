@@ -82,15 +82,27 @@ export default function HojePage() {
   const [referenceTime] = useState(() => Date.now())
 
   useEffect(() => {
-    const frame = window.requestAnimationFrame(() => {
-      setFronts(loadFronts())
-      setTasks(loadTasks())
-      setPeople(loadPeople())
-      setDecisions(loadDecisions())
+    let active = true
+    ;(async () => {
+      const [frontsData, tasksData, peopleData, decisionsData] = await Promise.all([
+        loadFronts(),
+        loadTasks(),
+        loadPeople(),
+        loadDecisions(),
+      ])
+      if (!active) return
+      setFronts(frontsData)
+      setTasks(tasksData)
+      setPeople(peopleData)
+      setDecisions(decisionsData)
+    })()
+    loadRetroSnapshots(SESSION_ID).then(value => {
+      if (active) setSnapshots(value)
     })
-    loadRetroSnapshots(SESSION_ID).then(setSnapshots)
 
-    return () => window.cancelAnimationFrame(frame)
+    return () => {
+      active = false
+    }
   }, [])
 
   const openTasks = tasks.filter(t => t.status !== 'Concluída')
@@ -132,7 +144,7 @@ export default function HojePage() {
     const task = createEmptyTask({ text })
     const updated = [...tasks, task]
     setTasks(updated)
-    saveTasks(updated)
+    void saveTasks(updated)
   }
 
   function handleToggleTask(id: string) {
@@ -140,7 +152,7 @@ export default function HojePage() {
       t.id === id ? { ...t, status: (t.status === 'Concluída' ? 'Aberta' : 'Concluída') as Task['status'], updatedAt: new Date().toISOString() } : t
     )
     setTasks(updated)
-    saveTasks(updated)
+    void saveTasks(updated)
   }
 
   return (

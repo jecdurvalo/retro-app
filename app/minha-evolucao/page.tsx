@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Select } from '@/components/ui/select'
 import {
   BookOpenCheck,
@@ -432,12 +432,12 @@ function CommitmentChecklist({
 }
 
 export default function MinhaEvolucaoPage() {
-  const [evidence, setEvidence] = useState<EvolutionEvidence[]>(loadEvidences)
-  const [fronts] = useState<ManagementFront[]>(loadFronts)
-  const [people] = useState<LeadershipPerson[]>(loadPeople)
-  const [focuses, setFocuses] = useState<EvolutionFocus[]>(loadFocuses)
-  const [commitments, setCommitments] = useState<EvolutionCommitment[]>(loadCommitments)
-  const [cycle, setCycle] = useState<EvolutionCycle>(loadCycle)
+  const [evidence, setEvidence] = useState<EvolutionEvidence[]>([])
+  const [fronts, setFronts] = useState<ManagementFront[]>([])
+  const [people, setPeople] = useState<LeadershipPerson[]>([])
+  const [focuses, setFocuses] = useState<EvolutionFocus[]>([])
+  const [commitments, setCommitments] = useState<EvolutionCommitment[]>([])
+  const [cycle, setCycle] = useState<EvolutionCycle>({ label: '', startDate: '', endDate: '' })
   const [search, setSearch] = useState('')
   const [showFilters, setShowFilters] = useState(false)
   const [areaFilter, setAreaFilter] = useState('')
@@ -445,6 +445,30 @@ export default function MinhaEvolucaoPage() {
   const [expandedAreas, setExpandedAreas] = useState<EvolutionArea[]>([])
   const [showModal, setShowModal] = useState(false)
   const [saved, setSaved] = useState(false)
+
+  useEffect(() => {
+    let active = true
+    ;(async () => {
+      const [evidenceData, frontsData, peopleData, focusesData, commitmentsData, cycleData] = await Promise.all([
+        loadEvidences(),
+        loadFronts(),
+        loadPeople(),
+        loadFocuses(),
+        loadCommitments(),
+        loadCycle(),
+      ])
+      if (!active) return
+      setEvidence(evidenceData)
+      setFronts(frontsData)
+      setPeople(peopleData)
+      setFocuses(focusesData)
+      setCommitments(commitmentsData)
+      setCycle(cycleData)
+    })()
+    return () => {
+      active = false
+    }
+  }, [])
 
   const frontById = useMemo(() => new Map(fronts.map(front => [front.id, front.name])), [fronts])
   const personById = useMemo(() => new Map(people.map(person => [person.id, person])), [people])
@@ -481,7 +505,7 @@ export default function MinhaEvolucaoPage() {
   function saveNewEvidence(item: EvolutionEvidence) {
     const next = [item, ...evidence]
     setEvidence(next)
-    saveEvidences(next)
+    void saveEvidences(next)
     setShowModal(false)
     setSaved(true)
     window.setTimeout(() => setSaved(false), 3000)
@@ -489,39 +513,39 @@ export default function MinhaEvolucaoPage() {
 
   function updateCycle(next: EvolutionCycle) {
     setCycle(next)
-    saveCycle(next)
+    void saveCycle(next)
   }
 
   function addFocus(title: string, priority: FocusPriority) {
     const next = [...focuses, createEmptyFocus({ title, priority })]
     setFocuses(next)
-    saveFocuses(next)
+    void saveFocuses(next)
   }
   function toggleFocus(id: string) {
     const next = focuses.map(item => (item.id === id ? { ...item, done: !item.done, updatedAt: new Date().toISOString() } : item))
     setFocuses(next)
-    saveFocuses(next)
+    void saveFocuses(next)
   }
   function deleteFocus(id: string) {
     const next = focuses.filter(item => item.id !== id)
     setFocuses(next)
-    saveFocuses(next)
+    void saveFocuses(next)
   }
 
   function addCommitment(text: string) {
     const next = [...commitments, createEmptyCommitment(text)]
     setCommitments(next)
-    saveCommitments(next)
+    void saveCommitments(next)
   }
   function toggleCommitment(id: string) {
     const next = commitments.map(item => (item.id === id ? { ...item, done: !item.done } : item))
     setCommitments(next)
-    saveCommitments(next)
+    void saveCommitments(next)
   }
   function deleteCommitment(id: string) {
     const next = commitments.filter(item => item.id !== id)
     setCommitments(next)
-    saveCommitments(next)
+    void saveCommitments(next)
   }
 
   const stats: PageStat[] = [

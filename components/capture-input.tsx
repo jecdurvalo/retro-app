@@ -147,7 +147,7 @@ export default function CaptureInput() {
 
   useEffect(() => {
     function handleOpen() {
-      setFronts(loadFronts().filter(front => front.status !== 'Arquivada'))
+      loadFronts().then(value => setFronts(value.filter(front => front.status !== 'Arquivada')))
       setOpen(true)
     }
 
@@ -179,7 +179,7 @@ export default function CaptureInput() {
     setStep('classify')
   }
 
-  function saveInput(event: FormEvent<HTMLFormElement>) {
+  async function saveInput(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const textValue = text.trim()
     const notesValue = notes.trim()
@@ -199,10 +199,10 @@ export default function CaptureInput() {
 
     window.localStorage.setItem(INPUTS_STORAGE_KEY, JSON.stringify([record, ...readCapturedInputs()]))
 
-    const currentFronts = loadFronts()
+    const currentFronts = await loadFronts()
     if (classification === 'Frente nova') {
       const newFront = createEmptyFront()
-      saveFronts([
+      await saveFronts([
         {
           ...newFront,
           name: textValue.slice(0, 80),
@@ -217,7 +217,7 @@ export default function CaptureInput() {
       ])
     } else if (classification === 'Decisão') {
       const decision = createEmptyDecision()
-      saveDecisions([
+      await saveDecisions([
         {
           ...decision,
           title: textValue.slice(0, 100),
@@ -225,15 +225,16 @@ export default function CaptureInput() {
           owner: people.split(',')[0]?.trim() || 'Joana',
           frontIds: relatedFrontId ? [relatedFrontId] : [],
         },
-        ...loadDecisions(),
+        ...(await loadDecisions()),
       ])
     } else if (classification === 'PDI') {
       const names = people.toLocaleLowerCase('pt-BR')
-      savePeople(loadPeople().map(person => names.includes(person.name.toLocaleLowerCase('pt-BR'))
+      const existingPeople = await loadPeople()
+      await savePeople(existingPeople.map(person => names.includes(person.name.toLocaleLowerCase('pt-BR'))
         ? { ...person, notes: [{ id: `note-${Date.now()}`, text: `Input para PDI: ${textValue}`, createdAt: new Date().toISOString() }, ...person.notes], updatedAt: new Date().toISOString() }
         : person))
     } else if (relatedFrontId && classification === 'Task') {
-      saveTasks([
+      await saveTasks([
         createEmptyTask({
           text: textValue,
           dueDate: '',
@@ -242,7 +243,7 @@ export default function CaptureInput() {
           notes: notesValue,
           priority: urgency === 'Crítica' ? 'Urgente' : urgency === 'Alta' ? 'Alta' : urgency === 'Baixa' ? 'Baixa' : 'Média',
         }),
-        ...loadTasks(),
+        ...(await loadTasks()),
       ])
     } else if (relatedFrontId && classification === 'FCA') {
       const fca = {
@@ -253,7 +254,7 @@ export default function CaptureInput() {
         owner: people.split(',')[0]?.trim() || '',
         status: urgency === 'Crítica' ? 'Bloqueado' as const : 'Em andamento' as const,
       }
-      saveFronts(currentFronts.map(front => {
+      await saveFronts(currentFronts.map(front => {
         if (front.id !== relatedFrontId) return front
 
         const peopleToAdd = people.split(',').map(item => item.trim()).filter(Boolean)
@@ -266,7 +267,7 @@ export default function CaptureInput() {
         }
       }))
     } else if (relatedFrontId && classification !== 'Insight qualitativo') {
-      saveFronts(currentFronts.map(front => {
+      await saveFronts(currentFronts.map(front => {
         if (front.id !== relatedFrontId) return front
 
         const peopleToAdd = people.split(',').map(item => item.trim()).filter(Boolean)

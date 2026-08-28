@@ -115,7 +115,7 @@ export default function RetroPage() {
       loadThemeGroups(SESSION_ID).then(setGroups)
       loadBoardHeader(SESSION_ID, DEFAULT_BOARD_HEADER).then(setBoardHeader)
       loadLiveItems()
-      setParticipantOptions(loadPeople().map(p => p.name).filter(Boolean))
+      loadPeople().then(people => setParticipantOptions(people.map(p => p.name).filter(Boolean)))
     })
 
     const channel = supabase
