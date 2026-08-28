@@ -213,73 +213,74 @@ export default function PersonProfilePage() {
     )
   }
 
-  const linkedFronts = person.frontIds.map(id => fronts.find(f => f.id === id)).filter((f): f is ManagementFront => Boolean(f))
-  const availableFronts = fronts.filter(f => !person.frontIds.includes(f.id))
-  const lastFeedback = person.feedback[0]
-  const hasOneOnOne = Boolean(person.nextOneOnOne)
-  const hasPdi = person.pdi.status !== 'Sem PDI'
+  const activePerson = person
+  const linkedFronts = activePerson.frontIds.map(id => fronts.find(f => f.id === id)).filter((f): f is ManagementFront => Boolean(f))
+  const availableFronts = fronts.filter(f => !activePerson.frontIds.includes(f.id))
+  const lastFeedback = activePerson.feedback[0]
+  const hasOneOnOne = Boolean(activePerson.nextOneOnOne)
+  const hasPdi = activePerson.pdi.status !== 'Sem PDI'
 
   function addProject(frontId: string) {
-    if (!frontId || person.frontIds.includes(frontId)) return
-    update({ frontIds: [...person.frontIds, frontId] })
+    if (!frontId || activePerson.frontIds.includes(frontId)) return
+    update({ frontIds: [...activePerson.frontIds, frontId] })
   }
   function removeProject(frontId: string) {
-    const nextRoles = { ...person.projectRoles }
+    const nextRoles = { ...activePerson.projectRoles }
     delete nextRoles[frontId]
-    update({ frontIds: person.frontIds.filter(id => id !== frontId), projectRoles: nextRoles })
+    update({ frontIds: activePerson.frontIds.filter(id => id !== frontId), projectRoles: nextRoles })
   }
   function setProjectRole(frontId: string, role: ProjectRole) {
-    update({ projectRoles: { ...person.projectRoles, [frontId]: role } })
+    update({ projectRoles: { ...activePerson.projectRoles, [frontId]: role } })
   }
 
   // ── Checklists
   function addEvidence(text: string) {
-    update({ nextLeapEvidence: [...person.nextLeapEvidence, newChecklistItem(text)] })
+    update({ nextLeapEvidence: [...activePerson.nextLeapEvidence, newChecklistItem(text)] })
   }
   function toggleEvidence(id: string) {
-    update({ nextLeapEvidence: person.nextLeapEvidence.map(i => (i.id === id ? { ...i, done: !i.done } : i)) })
+    update({ nextLeapEvidence: activePerson.nextLeapEvidence.map(i => (i.id === id ? { ...i, done: !i.done } : i)) })
   }
   function removeEvidence(id: string) {
-    update({ nextLeapEvidence: person.nextLeapEvidence.filter(i => i.id !== id) })
+    update({ nextLeapEvidence: activePerson.nextLeapEvidence.filter(i => i.id !== id) })
   }
 
   function addLeaderAction(text: string) {
-    update({ leaderActions: [...person.leaderActions, newChecklistItem(text)] })
+    update({ leaderActions: [...activePerson.leaderActions, newChecklistItem(text)] })
   }
   function toggleLeaderAction(id: string) {
-    update({ leaderActions: person.leaderActions.map(i => (i.id === id ? { ...i, done: !i.done } : i)) })
+    update({ leaderActions: activePerson.leaderActions.map(i => (i.id === id ? { ...i, done: !i.done } : i)) })
   }
   function removeLeaderAction(id: string) {
-    update({ leaderActions: person.leaderActions.filter(i => i.id !== id) })
+    update({ leaderActions: activePerson.leaderActions.filter(i => i.id !== id) })
   }
 
   function addRisk(text: string) {
-    update({ risks: [...person.risks, text] })
+    update({ risks: [...activePerson.risks, text] })
   }
   function removeRisk(index: number) {
-    update({ risks: person.risks.filter((_, i) => i !== index) })
+    update({ risks: activePerson.risks.filter((_, i) => i !== index) })
   }
   function addLever(text: string) {
-    update({ levers: [...person.levers, text] })
+    update({ levers: [...activePerson.levers, text] })
   }
   function removeLever(index: number) {
-    update({ levers: person.levers.filter((_, i) => i !== index) })
+    update({ levers: activePerson.levers.filter((_, i) => i !== index) })
   }
 
   // ── PDI goals (stored as a newline-joined string, edited as chips)
-  const goalsList = person.pdi.goals.split('\n').map(g => g.trim()).filter(Boolean)
+  const goalsList = activePerson.pdi.goals.split('\n').map(g => g.trim()).filter(Boolean)
   function addGoal(text: string) {
-    update({ pdi: { ...person.pdi, goals: [...goalsList, text].join('\n') } })
+    update({ pdi: { ...activePerson.pdi, goals: [...goalsList, text].join('\n') } })
   }
   function removeGoal(index: number) {
-    update({ pdi: { ...person.pdi, goals: goalsList.filter((_, i) => i !== index).join('\n') } })
+    update({ pdi: { ...activePerson.pdi, goals: goalsList.filter((_, i) => i !== index).join('\n') } })
   }
 
   // ── History (merged timeline)
   const historyItems = [
-    ...person.notes.map(n => ({ id: n.id, type: 'Nota', tone: 'text-sky-600 bg-sky-50', createdAt: n.createdAt, text: n.text })),
-    ...person.feedback.map(n => ({ id: n.id, type: 'Feedback', tone: 'text-violet-600 bg-violet-50', createdAt: n.createdAt, text: n.text })),
-    ...person.oneOnOnes.map(o => ({ id: o.id, type: '1:1', tone: 'text-[var(--retro-wine)] bg-[var(--retro-wine-soft)]', createdAt: o.date, text: o.notes || 'Sem notas registradas' })),
+    ...activePerson.notes.map(n => ({ id: n.id, type: 'Nota', tone: 'text-sky-600 bg-sky-50', createdAt: n.createdAt, text: n.text })),
+    ...activePerson.feedback.map(n => ({ id: n.id, type: 'Feedback', tone: 'text-violet-600 bg-violet-50', createdAt: n.createdAt, text: n.text })),
+    ...activePerson.oneOnOnes.map(o => ({ id: o.id, type: '1:1', tone: 'text-[var(--retro-wine)] bg-[var(--retro-wine-soft)]', createdAt: o.date, text: o.notes || 'Sem notas registradas' })),
   ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
   return (

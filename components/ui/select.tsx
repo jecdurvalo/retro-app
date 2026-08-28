@@ -23,7 +23,7 @@ export function Select({
 }: {
   value: string
   onChange: (value: string) => void
-  options: SelectOption[]
+  options: readonly SelectOption[]
   placeholder?: string
   className?: string
   'aria-label'?: string
