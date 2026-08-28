@@ -9,7 +9,6 @@ import {
   ClipboardCheck,
   GitBranch,
   MessageSquareWarning,
-  Plus,
   Square,
   Target,
   ThermometerSun,
@@ -20,6 +19,9 @@ import { loadTasks, saveTasks, createEmptyTask, type Task } from '@/lib/tasks'
 import { loadPeople, type LeadershipPerson } from '@/lib/people'
 import { loadRetroSnapshots, type RetroSnapshot } from '@/lib/management'
 import { loadDecisions, type LeadershipDecision } from '@/lib/decisions'
+import { SESSION_ID } from '@/lib/supabase'
+import { PageHeader } from '@/components/ui/page-header'
+import { QuickAddModal, QuickAddTextForm } from '@/components/ui/quick-add-modal'
 
 function formatDate(iso: string) {
   if (!iso) return ''
@@ -63,13 +65,20 @@ function isOverdue(value: string, referenceTime: number) {
   return Boolean(value && new Date(`${value}T23:59:59`).getTime() < referenceTime)
 }
 
+function priorityScore(front: ManagementFront) {
+  const temperature = { Crítica: 30, Atenção: 20, Saudável: 10 }[front.temperature]
+  const blocked = front.status === 'Bloqueada' ? 12 : 0
+  const owner = front.owner ? 0 : 8
+  const checkpoint = front.nextCheckpoint ? new Date(front.nextCheckpoint).getTime() : Number.MAX_SAFE_INTEGER
+  return { score: temperature + blocked + owner, checkpoint }
+}
+
 export default function HojePage() {
   const [fronts, setFronts] = useState<ManagementFront[]>([])
   const [tasks, setTasks] = useState<Task[]>([])
   const [people, setPeople] = useState<LeadershipPerson[]>([])
   const [snapshots, setSnapshots] = useState<RetroSnapshot[]>([])
   const [decisions, setDecisions] = useState<LeadershipDecision[]>([])
-  const [newTaskText, setNewTaskText] = useState('')
   const [referenceTime] = useState(() => Date.now())
 
   useEffect(() => {
@@ -77,9 +86,9 @@ export default function HojePage() {
       setFronts(loadFronts())
       setTasks(loadTasks())
       setPeople(loadPeople())
-      setSnapshots(loadRetroSnapshots())
       setDecisions(loadDecisions())
     })
+    loadRetroSnapshots(SESSION_ID).then(setSnapshots)
 
     return () => window.cancelAnimationFrame(frame)
   }, [])
@@ -91,12 +100,18 @@ export default function HojePage() {
     .map(fca => ({ ...fca, frontName: front.name, frontId: front.id })))
   const pendingDecisions = decisions.filter(decision => decision.status === 'Pendente' || decision.status === 'Em alinhamento' || decision.status === 'Escalada')
 
-  const urgentFronts = fronts.filter(f =>
-    f.temperature === 'Crítica' ||
-    f.temperature === 'Atenção' ||
-    f.status === 'Bloqueada' ||
-    isOverdue(f.nextCheckpoint, referenceTime)
-  )
+  const urgentFronts = fronts
+    .filter(f =>
+      f.temperature === 'Crítica' ||
+      f.temperature === 'Atenção' ||
+      f.status === 'Bloqueada' ||
+      isOverdue(f.nextCheckpoint, referenceTime)
+    )
+    .sort((a, b) => {
+      const scoreA = priorityScore(a)
+      const scoreB = priorityScore(b)
+      return scoreB.score - scoreA.score || scoreA.checkpoint - scoreB.checkpoint
+    })
 
   const sortedPeople = [...people]
     .filter(p => p.nextOneOnOne)
@@ -107,17 +122,17 @@ export default function HojePage() {
     person.pdi.status === 'Ativo'
   )
 
-  const lastSnapshot = [...snapshots].sort((a, b) => b.date.localeCompare(a.date))[0] ?? null
+  const sortedSnapshots = [...snapshots].sort((a, b) => b.date.localeCompare(a.date))
+  const lastSnapshot = sortedSnapshots[0] ?? null
   const retroThemes = lastSnapshot?.themes.slice(0, 4) ?? []
 
-  function handleAddTask() {
-    const text = newTaskText.trim()
+  function handleAddTask(rawText: string) {
+    const text = rawText.trim()
     if (!text) return
     const task = createEmptyTask({ text })
     const updated = [...tasks, task]
     setTasks(updated)
     saveTasks(updated)
-    setNewTaskText('')
   }
 
   function handleToggleTask(id: string) {
@@ -132,27 +147,11 @@ export default function HojePage() {
     <main className="min-h-screen bg-[var(--bg-secondary)] px-4 py-6 text-[var(--text-primary)] sm:px-6 lg:px-8 lg:py-8">
       <div className="mx-auto max-w-[1200px] space-y-6">
 
-        {/* Header */}
-        <header>
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-            Painel de hoje, Joana
-          </h1>
-          <p className="mt-1 text-sm font-medium capitalize text-[var(--text-secondary)]">
-            {todayGreeting()} · {formattedToday()}
-          </p>
-        </header>
-
-        <section className="rounded-2xl border border-[var(--border-medium)] bg-[var(--bg-primary)] p-5 shadow-[var(--shadow-sm)]">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div>
-              <div className="flex items-center gap-2">
-                <ClipboardCheck size={19} className="text-[var(--retro-wine)]" />
-                <h2 className="text-sm font-black uppercase tracking-[0.12em] text-[var(--text-tertiary)]">Revisão executiva do dia</h2>
-              </div>
-              <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-[var(--text-secondary)]">
-                O que precisa da sua atenção antes de cobrar: frentes, FCAs, decisões, retro e desenvolvimento do time.
-              </p>
-            </div>
+        <PageHeader
+          eyebrow={`${todayGreeting()} · ${formattedToday()}`}
+          title="Painel de hoje, Joana"
+          subtitle="O que precisa da sua atenção antes de cobrar: frentes, FCAs, decisões, retro e desenvolvimento do time."
+          action={
             <Link
               href="/frentes"
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--retro-wine)] px-4 py-2.5 text-sm font-black text-white transition hover:bg-[var(--retro-wine-hover)]"
@@ -160,25 +159,23 @@ export default function HojePage() {
               <GitBranch size={16} />
               Abrir frentes
             </Link>
+          }
+          stats={[
+            { label: 'Frentes urgentes', value: urgentFronts.length, detail: 'Saúde, bloqueio ou checkpoint' },
+            { label: 'FCAs abertos', value: openFcas.length, detail: 'Fato, causa e ação' },
+            { label: 'Tasks atrasadas', value: overdueTasks.length, detail: 'Cobrança objetiva' },
+            { label: 'Decisões pendentes', value: pendingDecisions.length, detail: 'Trade-offs sem fechamento' },
+            { label: 'Pessoas em foco', value: peopleInFocus.length, detail: 'Carga, cuidado ou desenvolvimento' },
+          ]}
+        />
+
+        <section className="rounded-2xl border border-[var(--border-medium)] bg-[var(--bg-primary)] p-5 shadow-[var(--shadow-sm)]">
+          <div className="flex items-center gap-2">
+            <ClipboardCheck size={16} className="text-[var(--retro-wine)]" />
+            <h2 className="text-xs font-black uppercase tracking-widest text-[var(--text-tertiary)]">Revisão executiva do dia</h2>
           </div>
 
-          <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-            {[
-              ['Frentes para destravar', urgentFronts.length, 'Saúde, bloqueio ou checkpoint'],
-              ['FCAs abertos', openFcas.length, 'Fato, causa e ação'],
-              ['Tasks atrasadas', overdueTasks.length, 'Cobrança objetiva'],
-              ['Decisões pendentes', pendingDecisions.length, 'Trade-offs sem fechamento'],
-              ['Pessoas em foco', peopleInFocus.length, 'Carga, cuidado ou desenvolvimento'],
-            ].map(([label, value, detail]) => (
-              <div key={String(label)} className="rounded-xl border border-[var(--border-light)] bg-[var(--bg-secondary)] p-3">
-                <p className="text-[11px] font-black uppercase tracking-wider text-[var(--text-tertiary)]">{String(label)}</p>
-                <p className="mt-1 text-2xl font-black text-[var(--text-primary)]">{Number(value)}</p>
-                <p className="mt-0.5 text-[11px] font-semibold leading-4 text-[var(--text-secondary)]">{String(detail)}</p>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-5 grid gap-4 lg:grid-cols-2">
+          <div className="mt-4 grid gap-4 lg:grid-cols-2">
             <div className="rounded-xl border border-[var(--border-light)] bg-white p-4">
               <div className="flex items-center gap-2">
                 <MessageSquareWarning size={16} className="text-amber-500" />
@@ -273,6 +270,11 @@ export default function HojePage() {
                             <span className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${temperatureStyle[front.temperature] ?? ''}`}>
                               {front.temperature}
                             </span>
+                            {front.owner && (
+                              <span className="rounded-full bg-[var(--bg-secondary)] px-2.5 py-0.5 text-xs font-semibold text-[var(--text-tertiary)]">
+                                {front.owner}
+                              </span>
+                            )}
                           </div>
                           {(front.nextStep || front.description) && (
                             <p className="mt-1 text-xs leading-5 text-[var(--text-secondary)] line-clamp-2">
@@ -333,25 +335,17 @@ export default function HojePage() {
               )}
 
               {/* Quick add */}
-              <form
-                onSubmit={e => { e.preventDefault(); handleAddTask() }}
-                className="flex gap-2"
-              >
-                <input
-                  type="text"
-                  value={newTaskText}
-                  onChange={e => setNewTaskText(e.target.value)}
-                  placeholder="Nova ação ou cobrança..."
-                  className="min-w-0 flex-1 rounded-xl border border-[var(--border-medium)] bg-[var(--bg-primary)] px-3 py-2 text-sm outline-none placeholder:text-[var(--text-tertiary)] focus:border-[var(--retro-wine)] focus:ring-2 focus:ring-[var(--retro-wine-soft)]"
-                />
-                <button
-                  type="submit"
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--retro-wine)] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[var(--retro-wine-hover)]"
-                >
-                  <Plus size={15} />
-                  Adicionar
-                </button>
-              </form>
+              <QuickAddModal title="Nova ação" triggerLabel="Adicionar ação" compact>
+                {close => (
+                  <QuickAddTextForm
+                    placeholder="Nova ação ou cobrança..."
+                    onSubmit={value => {
+                      handleAddTask(value)
+                      close()
+                    }}
+                  />
+                )}
+              </QuickAddModal>
             </section>
 
           </div>
@@ -428,12 +422,10 @@ export default function HojePage() {
                       ))}
                     </div>
                   )}
+
                   <div className="pt-1">
-                    <Link
-                      href="/retro"
-                      className="text-xs font-semibold text-[var(--retro-wine)] transition hover:underline"
-                    >
-                      Ver histórico de retros →
+                    <Link href="/historico" className="text-xs font-semibold text-[var(--retro-wine)] transition hover:underline">
+                      Ver histórico completo de retros ({sortedSnapshots.length}) →
                     </Link>
                   </div>
                 </div>

@@ -20,6 +20,6 @@ export interface RetroItem {
 
 export const CATEGORIES: { key: Category; label: string; emoji: string; color: string; bg: string }[] = [
   { key: 'went_well', label: 'Mandamos muito bem', emoji: '01', color: 'text-red-700', bg: 'bg-red-50 border-red-200' },
-  { key: 'to_improve', label: 'Precisamos melhorar', emoji: '02', color: 'text-zinc-700', bg: 'bg-zinc-50 border-zinc-200' },
-  { key: 'action_items', label: 'Vamos parar', emoji: '03', color: 'text-stone-700', bg: 'bg-stone-50 border-stone-200' },
+  { key: 'to_improve', label: 'Podemos melhorar', emoji: '02', color: 'text-zinc-700', bg: 'bg-zinc-50 border-zinc-200' },
+  { key: 'action_items', label: 'Vamos repensar', emoji: '03', color: 'text-stone-700', bg: 'bg-stone-50 border-stone-200' },
 ]

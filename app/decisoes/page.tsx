@@ -1,15 +1,14 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { Select } from '@/components/ui/select'
 import {
   AlertTriangle,
   CalendarClock,
   CheckCircle2,
   CircleHelp,
-  ChevronDown,
   Edit3,
   Filter,
-  Flag,
   Plus,
   Scale,
   Search,
@@ -25,6 +24,7 @@ import {
   type LeadershipDecision,
 } from '@/lib/decisions'
 import { loadFronts, type ManagementFront } from '@/lib/fronts'
+import { PageHeader, type PageStat } from '@/components/ui/page-header'
 
 type Filters = {
   status: string
@@ -35,7 +35,7 @@ type Filters = {
 const emptyFilters: Filters = { status: '', hqa: '', frontId: '' }
 const cardClass = 'rounded-3xl border border-black/5 bg-white shadow-sm shadow-zinc-950/5'
 const fieldClass =
-  'w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-800 outline-none transition placeholder:text-zinc-400 focus:border-[var(--retro-wine)] focus:ring-2 focus:ring-[rgba(135,0,47,0.08)]'
+  'w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm font-semibold text-zinc-900 shadow-sm outline-none transition placeholder:text-zinc-400 focus:border-[var(--retro-wine)] focus:ring-4 focus:ring-[var(--retro-wine-tint)]'
 
 const statusTone: Record<LeadershipDecision['status'], string> = {
   Pendente: 'bg-amber-50 text-amber-700',
@@ -144,31 +144,21 @@ function DecisionModal({
             </label>
             <label className="grid gap-1.5 text-xs font-bold text-zinc-500">
               Status
-              <select
+              <Select
                 value={draft.status}
-                onChange={event => set('status', event.target.value as LeadershipDecision['status'])}
+                onChange={value => set('status', value as LeadershipDecision['status'])}
+                options={[...decisionStatuses]}
                 className={fieldClass}
-              >
-                {decisionStatuses.map(status => <option key={status}>{status}</option>)}
-              </select>
+              />
             </label>
             <label className="grid gap-1.5 text-xs font-bold text-zinc-500 md:col-span-2">
               Frente relacionada
-              <span className="relative block">
-                <select
-                  value={draft.frontIds[0] || ''}
-                  onChange={event => set('frontIds', event.target.value ? [event.target.value] : [])}
-                  className={`${fieldClass} appearance-none pr-10`}
-                >
-                  <option value="">Nenhuma</option>
-                  {fronts.map(front => (
-                    <option key={front.id} value={front.id}>
-                      {front.name}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown size={16} className="pointer-events-none absolute bottom-3.5 right-4 text-zinc-400" />
-              </span>
+              <Select
+                value={draft.frontIds[0] || ''}
+                onChange={value => set('frontIds', value ? [value] : [])}
+                options={[{ value: '', label: 'Nenhuma' }, ...fronts.map(front => ({ value: front.id, label: front.name }))]}
+                className={fieldClass}
+              />
             </label>
           </div>
 
@@ -305,11 +295,11 @@ export default function DecisoesPage() {
     if (kind === 'noOwner') setSearch(attention.noOwner[0]?.title ?? '')
   }
 
-  const kpis = [
-    { label: 'Pendentes', value: decisions.filter(item => item.status === 'Pendente' || item.status === 'Em alinhamento').length, detail: 'Aguardando definição', icon: CalendarClock, tone: 'bg-amber-50 text-amber-700' },
-    { label: 'HQA alinhado', value: decisions.filter(item => item.hqa).length, detail: 'Acordos validados', icon: ShieldCheck, tone: 'bg-emerald-50 text-emerald-700' },
-    { label: 'Sem checkpoint', value: decisions.filter(item => !item.nextCheckpoint && !item.noCheckpointReason).length, detail: 'Sem data ou justificativa', icon: AlertTriangle, tone: 'bg-violet-50 text-violet-700' },
-    { label: 'Escaladas', value: decisions.filter(item => item.status === 'Escalada').length, detail: 'Enviadas para liderança', icon: Flag, tone: 'bg-rose-50 text-rose-700' },
+  const stats: PageStat[] = [
+    { label: 'Pendentes', value: decisions.filter(item => item.status === 'Pendente' || item.status === 'Em alinhamento').length, detail: 'Aguardando definição' },
+    { label: 'HQA alinhado', value: decisions.filter(item => item.hqa).length, detail: 'Acordos validados' },
+    { label: 'Sem checkpoint', value: decisions.filter(item => !item.nextCheckpoint && !item.noCheckpointReason).length, detail: 'Sem data ou justificativa' },
+    { label: 'Escaladas', value: decisions.filter(item => item.status === 'Escalada').length, detail: 'Enviadas para liderança' },
   ]
 
   const alerts = [
@@ -320,66 +310,62 @@ export default function DecisoesPage() {
   ]
 
   return (
-    <main className="min-h-screen bg-[var(--retro-bg)] px-5 py-7 text-[var(--retro-ink)] sm:px-8 lg:px-10">
+    <main className="min-h-screen bg-[var(--bg-secondary)] px-4 py-6 text-[var(--text-primary)] sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[1500px]">
-        <header className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-          <div>
-            <h1 className="text-3xl font-black tracking-tight sm:text-4xl">Decisões</h1>
-            <p className="mt-2 text-sm text-zinc-500">Acordos, trade-offs, donos e próximos checkpoints.</p>
-          </div>
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <label className="flex min-w-72 items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3.5 py-2.5 shadow-sm">
-              <Search size={17} className="text-zinc-400" />
-              <input
-                value={search}
-                onChange={event => setSearch(event.target.value)}
-                placeholder="Buscar decisões, donos, contextos..."
-                className="w-full bg-transparent text-sm outline-none placeholder:text-zinc-400"
-              />
-            </label>
-            <button onClick={() => setShowFilters(value => !value)} className="inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-700 shadow-sm">
-              <Filter size={16} /> Filtros
-            </button>
-            <button onClick={() => setEditing(createEmptyDecision())} className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--retro-wine)] px-4 py-2.5 text-sm font-black text-white shadow-lg shadow-[rgba(135,0,47,0.18)]">
-              <Plus size={17} /> Nova decisão
-            </button>
-          </div>
-        </header>
+        <PageHeader
+          eyebrow="Governança"
+          title="Decisões"
+          subtitle="Acordos, trade-offs, donos e próximos checkpoints."
+          stats={stats}
+          action={
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <button onClick={() => setShowFilters(value => !value)} className="inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-700 shadow-sm">
+                <Filter size={16} /> Filtros
+              </button>
+              <button onClick={() => setEditing(createEmptyDecision())} className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--retro-wine)] px-4 py-2.5 text-sm font-black text-white shadow-lg shadow-[rgba(135,0,47,0.18)]">
+                <Plus size={17} /> Nova decisão
+              </button>
+            </div>
+          }
+        >
+          <label className="flex w-full items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3.5 py-2.5 shadow-sm sm:max-w-md">
+            <Search size={17} className="text-zinc-400" />
+            <input
+              value={search}
+              onChange={event => setSearch(event.target.value)}
+              placeholder="Buscar decisões, donos, contextos..."
+              className="w-full bg-transparent text-sm outline-none placeholder:text-zinc-400"
+            />
+          </label>
+        </PageHeader>
 
         {showFilters && (
           <section className={`${cardClass} mt-5 grid gap-4 p-4 sm:grid-cols-3`}>
             <label className="grid gap-1.5 text-xs font-bold text-zinc-500">
               Status
-              <select value={filters.status} onChange={event => setFilters(current => ({ ...current, status: event.target.value }))} className={fieldClass}>
-                <option value="">Todos</option>
-                {decisionStatuses.map(status => <option key={status}>{status}</option>)}
-              </select>
+              <Select value={filters.status} onChange={value => setFilters(current => ({ ...current, status: value }))} options={[{ value: '', label: 'Todos' }, ...decisionStatuses.map(status => ({ value: status, label: status }))]} className={fieldClass} />
             </label>
             <label className="grid gap-1.5 text-xs font-bold text-zinc-500">
               HQA
-              <select value={filters.hqa} onChange={event => setFilters(current => ({ ...current, hqa: event.target.value }))} className={fieldClass}>
-                <option value="">Todos</option><option value="true">Alinhado</option><option value="false">Não alinhado</option>
-              </select>
+              <Select
+                value={filters.hqa}
+                onChange={value => setFilters(current => ({ ...current, hqa: value }))}
+                options={[{ value: '', label: 'Todos' }, { value: 'true', label: 'Alinhado' }, { value: 'false', label: 'Não alinhado' }]}
+                className={fieldClass}
+              />
             </label>
             <label className="grid gap-1.5 text-xs font-bold text-zinc-500">
               Frente relacionada
-              <select value={filters.frontId} onChange={event => setFilters(current => ({ ...current, frontId: event.target.value }))} className={fieldClass}>
-                <option value="">Todas</option>
-                {fronts.map(front => <option key={front.id} value={front.id}>{front.name}</option>)}
-              </select>
+              <Select
+                value={filters.frontId}
+                onChange={value => setFilters(current => ({ ...current, frontId: value }))}
+                options={[{ value: '', label: 'Todas' }, ...fronts.map(front => ({ value: front.id, label: front.name }))]}
+                className={fieldClass}
+              />
             </label>
           </section>
         )}
         {feedback && <p role="status" className="mt-4 rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-700">{feedback}</p>}
-
-        <section className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {kpis.map(({ label, value, detail, icon: Icon, tone }) => (
-            <article key={label} className={`${cardClass} flex items-center gap-4 p-5`}>
-              <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-full ${tone}`}><Icon size={22} /></span>
-              <div><p className="text-sm font-bold text-zinc-500">{label}</p><p className="text-3xl font-black text-zinc-950">{value}</p><p className="text-xs text-zinc-400">{detail}</p></div>
-            </article>
-          ))}
-        </section>
 
         <section className="mt-6 grid gap-5 xl:grid-cols-[minmax(0,1fr)_310px]">
           <article className={`${cardClass} overflow-hidden`}>
@@ -389,30 +375,50 @@ export default function DecisoesPage() {
                 <button onClick={() => { setSearch(''); setFilters(emptyFilters) }} className="text-xs font-black text-[var(--retro-wine)]">Limpar filtros</button>
               )}
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[1080px] text-left text-sm">
-                <thead className="bg-[#fcfaf9] text-xs font-bold text-zinc-500">
-                  <tr>{['Decisão', 'Contexto', 'Dono', 'Stakeholders', 'HQA', 'Próximo checkpoint', 'Status', ''].map(label => <th key={label} className="px-5 py-3.5">{label}</th>)}</tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-100">
-                  {filtered.map(decision => (
-                    <tr key={decision.id} className="align-top hover:bg-[#fcfaf9]">
-                      <td className="max-w-52 px-5 py-4"><p className="font-black text-zinc-900">{decision.title}</p><p className="mt-1 line-clamp-1 text-xs text-[var(--retro-wine)]">{decision.frontIds.map(id => frontById.get(id)?.name).filter(Boolean).join(' · ') || 'Sem frente vinculada'}</p></td>
-                      <td className="max-w-60 px-5 py-4"><p className="line-clamp-2 text-xs leading-5 text-zinc-600">{decision.context}</p>{decision.tradeOff && <p className="mt-1 line-clamp-1 text-xs text-zinc-400">Trade-off: {decision.tradeOff}</p>}</td>
-                      <td className="px-5 py-4 font-bold text-zinc-700">{decision.owner || <span className="text-rose-600">Sem dono</span>}</td>
-                      <td className="max-w-48 px-5 py-4"><div className="flex flex-wrap gap-1">{decision.stakeholders.slice(0, 3).map(item => <span key={item} className="rounded-full bg-blue-50 px-2 py-1 text-[10px] font-bold text-blue-700">{item}</span>)}</div></td>
-                      <td className="px-5 py-4">
-                        <span title="HQA significa High Quality Agreement: alinhamento real sobre decisão, impactos e compromissos." className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold ${decision.hqa ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
-                          {decision.hqa ? <CheckCircle2 size={13} /> : <CircleHelp size={13} />}{decision.hqa ? 'Alinhado' : 'Pendente'}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4"><p className={`font-bold ${isOverdue(decision.nextCheckpoint) ? 'text-rose-600' : 'text-zinc-700'}`}>{formatDate(decision.nextCheckpoint)}</p>{!decision.nextCheckpoint && decision.noCheckpointReason && <p className="mt-1 max-w-40 text-xs text-zinc-400">{decision.noCheckpointReason}</p>}</td>
-                      <td className="px-5 py-4"><span className={`rounded-full px-2.5 py-1 text-xs font-bold ${statusTone[decision.status]}`}>{decision.status}</span></td>
-                      <td className="px-5 py-4"><button onClick={() => setEditing(decision)} aria-label={`Editar ${decision.title}`} className="rounded-lg p-2 text-zinc-400 hover:bg-zinc-100 hover:text-[var(--retro-wine)]"><Edit3 size={16} /></button></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="grid gap-3 p-4 sm:p-5">
+              {filtered.map(decision => {
+                const frontNames = decision.frontIds.map(id => frontById.get(id)?.name).filter(Boolean).join(' · ')
+                const overdue = isOverdue(decision.nextCheckpoint)
+                return (
+                  <article key={decision.id} className="rounded-2xl border border-zinc-200 bg-white p-4 transition hover:border-zinc-300">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-black text-zinc-900">{decision.title}</p>
+                        <p className="mt-0.5 text-xs font-semibold text-[var(--retro-wine)]">{frontNames || 'Sem frente vinculada'}</p>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${statusTone[decision.status]}`}>{decision.status}</span>
+                        <button onClick={() => setEditing(decision)} aria-label={`Editar ${decision.title}`} className="rounded-lg p-2 text-zinc-400 hover:bg-zinc-100 hover:text-[var(--retro-wine)]">
+                          <Edit3 size={16} />
+                        </button>
+                      </div>
+                    </div>
+
+                    {decision.context && <p className="mt-2 text-sm leading-5 text-zinc-600">{decision.context}</p>}
+                    {decision.tradeOff && <p className="mt-1 text-xs text-zinc-400">Trade-off: {decision.tradeOff}</p>}
+
+                    <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+                      <span className="font-bold text-zinc-700">{decision.owner || <span className="text-rose-600">Sem dono</span>}</span>
+                      <span
+                        title="HQA significa High Quality Agreement: alinhamento real sobre decisão, impactos e compromissos."
+                        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 font-bold ${decision.hqa ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}
+                      >
+                        {decision.hqa ? <CheckCircle2 size={13} /> : <CircleHelp size={13} />}{decision.hqa ? 'HQA alinhado' : 'HQA pendente'}
+                      </span>
+                      <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 font-bold ${overdue ? 'bg-rose-50 text-rose-700' : 'bg-zinc-100 text-zinc-600'}`}>
+                        <CalendarClock size={12} />
+                        {formatDate(decision.nextCheckpoint)}
+                      </span>
+                      {!decision.nextCheckpoint && decision.noCheckpointReason && (
+                        <span className="text-zinc-400">{decision.noCheckpointReason}</span>
+                      )}
+                      {decision.stakeholders.slice(0, 4).map(item => (
+                        <span key={item} className="rounded-full bg-blue-50 px-2.5 py-1 font-bold text-blue-700">{item}</span>
+                      ))}
+                    </div>
+                  </article>
+                )
+              })}
               {!filtered.length && (
                 <div className="p-8 text-center text-sm text-zinc-500">
                   <p>Nenhuma decisão encontrada com estes filtros.</p>

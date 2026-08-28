@@ -1,9 +1,9 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Albert_Sans } from "next/font/google";
 import LeadershipShell from "@/components/leadership-shell";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"] });
+const albertSans = Albert_Sans({ subsets: ["latin"], variable: "--font-albert-sans" });
 
 export const metadata: Metadata = {
   title: "Cockpit de Gestão",
@@ -23,7 +23,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR">
-      <body className={inter.className}>
+      <body className={`${albertSans.className} tracking-tight`}>
         <LeadershipShell>{children}</LeadershipShell>
       </body>
     </html>

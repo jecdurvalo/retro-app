@@ -4,12 +4,12 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
 import {
   ArrowLeft,
   ArrowRight,
-  ChevronDown,
   Link2,
   Save,
   Sparkles,
   X,
 } from 'lucide-react'
+import { Select } from '@/components/ui/select'
 import {
   createEmptyFCA,
   createEmptyFront,
@@ -359,13 +359,12 @@ export default function CaptureInput() {
 
               <label className="block text-sm font-black text-zinc-700">
                 Frente relacionada <span className="font-semibold text-zinc-400">(opcional)</span>
-                <span className="relative block">
-                  <select value={relatedFrontId} onChange={event => setRelatedFrontId(event.target.value)} className={`${fieldClass} appearance-none pr-10`}>
-                    <option value="">Nenhuma frente relacionada</option>
-                    {fronts.map(front => <option key={front.id} value={front.id}>{front.name}</option>)}
-                  </select>
-                  <ChevronDown size={16} className="pointer-events-none absolute bottom-3.5 right-4 text-zinc-400" />
-                </span>
+                <Select
+                  value={relatedFrontId}
+                  onChange={setRelatedFrontId}
+                  options={[{ value: '', label: 'Nenhuma frente relacionada' }, ...fronts.map(front => ({ value: front.id, label: front.name }))]}
+                  className={fieldClass}
+                />
               </label>
 
               <label className="block text-sm font-black text-zinc-700">
@@ -430,13 +429,12 @@ export default function CaptureInput() {
                   </label>
                   <label className="block text-xs font-black uppercase tracking-wider text-zinc-500">
                     Frente
-                    <span className="relative block">
-                      <select value={relatedFrontId} onChange={event => setRelatedFrontId(event.target.value)} className={`${fieldClass} appearance-none pr-10`}>
-                        <option value="">Nenhuma frente relacionada</option>
-                        {fronts.map(front => <option key={front.id} value={front.id}>{front.name}</option>)}
-                      </select>
-                      <ChevronDown size={16} className="pointer-events-none absolute bottom-3.5 right-4 text-zinc-400" />
-                    </span>
+                    <Select
+                      value={relatedFrontId}
+                      onChange={setRelatedFrontId}
+                      options={[{ value: '', label: 'Nenhuma frente relacionada' }, ...fronts.map(front => ({ value: front.id, label: front.name }))]}
+                      className={fieldClass}
+                    />
                   </label>
                   <label className="block text-xs font-black uppercase tracking-wider text-zinc-500">
                     Decisão relacionada
@@ -484,12 +482,7 @@ function SelectField({
   return (
     <label className="block text-sm font-black text-zinc-700">
       {label}
-      <span className="relative block">
-        <select value={value} onChange={event => onChange(event.target.value)} className={`${fieldClass} appearance-none pr-10`}>
-          {options.map(option => <option key={option}>{option}</option>)}
-        </select>
-        <ChevronDown size={16} className="pointer-events-none absolute bottom-3.5 right-4 text-zinc-400" />
-      </span>
+      <Select value={value} onChange={onChange} options={[...options]} className={fieldClass} />
     </label>
   )
 }

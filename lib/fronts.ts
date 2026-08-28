@@ -62,6 +62,10 @@ export type ManagementFront = {
   relatedTasks: string[]
   evidence: string[]
   fcas: FCA[]
+  tags: string[]
+  /** Manual override (0-100) for the progress bar. When null, progress is
+   * calculated automatically from FCA + linked-task completion (see frontProgress). */
+  progressOverride: number | null
   createdAt: string
   updatedAt: string
 }
@@ -89,8 +93,19 @@ export function createEmptyFront(): ManagementFront {
     relatedTasks: [],
     evidence: [],
     fcas: [],
+    tags: [],
+    progressOverride: null,
     createdAt: now,
     updatedAt: now,
+  }
+}
+
+function normalizeFront(raw: Partial<ManagementFront>): ManagementFront {
+  return {
+    ...createEmptyFront(),
+    ...raw,
+    tags: Array.isArray(raw.tags) ? raw.tags : [],
+    progressOverride: typeof raw.progressOverride === 'number' ? raw.progressOverride : null,
   }
 }
 
@@ -98,8 +113,31 @@ export function loadFronts(): ManagementFront[] {
   if (typeof window === 'undefined') return []
   try {
     const value = JSON.parse(localStorage.getItem(FRONTS_STORAGE_KEY) || 'null')
-    return Array.isArray(value) ? value : []
+    return Array.isArray(value) ? value.map(normalizeFront) : []
   } catch { return [] }
+}
+
+/** Progress % for a front. Uses the manual override when set; otherwise blends
+ * FCA completion and linked-task completion, falling back to a coarse estimate
+ * from `status` when there's nothing yet to count. */
+export function frontProgress(front: ManagementFront, tasks: { frontId: string; status: string }[]) {
+  if (typeof front.progressOverride === 'number') return front.progressOverride
+
+  const linkedTasks = tasks.filter(task => task.frontId === front.id)
+  const total = front.fcas.length + linkedTasks.length
+  if (total === 0) {
+    if (front.status === 'Concluída') return 100
+    if (front.status === 'Não iniciada') return 0
+    return 10
+  }
+  const done = front.fcas.filter(fca => fca.status === 'Concluído').length
+    + linkedTasks.filter(task => task.status === 'Concluída').length
+  return Math.round((done / total) * 100)
+}
+
+/** True when the front has FCAs or linked tasks to derive progress from automatically. */
+export function frontHasAutoProgressSource(front: ManagementFront, tasks: { frontId: string }[]) {
+  return front.fcas.length > 0 || tasks.some(task => task.frontId === front.id)
 }
 
 export function saveFronts(fronts: ManagementFront[]) {

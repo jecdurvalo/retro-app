@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { Select } from '@/components/ui/select'
 import {
   ArrowRight,
   CalendarCheck2,
@@ -17,11 +18,11 @@ import {
   Save,
   Search,
   Sparkles,
-  UsersRound,
   X,
 } from 'lucide-react'
 import { loadFronts, type ManagementFront } from '@/lib/fronts'
 import { loadPeople, type LeadershipPerson } from '@/lib/people'
+import { PageHeader, type PageStat } from '@/components/ui/page-header'
 import {
   createEmptyRitual,
   loadMonthlyClose,
@@ -37,7 +38,7 @@ import {
 
 const cardClass = 'rounded-3xl border border-black/5 bg-white shadow-sm shadow-zinc-950/5'
 const fieldClass =
-  'w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-800 outline-none transition placeholder:text-zinc-400 focus:border-[var(--retro-wine)] focus:ring-2 focus:ring-[rgba(135,0,47,0.08)]'
+  'w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm font-semibold text-zinc-900 shadow-sm outline-none transition placeholder:text-zinc-400 focus:border-[var(--retro-wine)] focus:ring-4 focus:ring-[var(--retro-wine-tint)]'
 const outputOptions = ['Task', 'Decisão', 'Checkpoint', 'Atualização'] as const
 
 const typeTone: Record<RitualType, string> = {
@@ -144,19 +145,16 @@ function RitualModal({
           <div className="grid gap-4 sm:grid-cols-3">
             <label className="grid gap-1.5 text-xs font-bold text-zinc-500">
               Tipo *
-              <select value={draft.type} onChange={event => set('type', event.target.value as RitualType)} className={fieldClass}>
-                {ritualTypes.map(type => <option key={type}>{type}</option>)}
-              </select>
+              <Select value={draft.type} onChange={value => set('type', value as RitualType)} options={[...ritualTypes]} className={fieldClass} />
             </label>
             <label className="grid gap-1.5 text-xs font-bold text-zinc-500">
               Cadência *
-              <select
+              <Select
                 value={draft.cadence}
-                onChange={event => set('cadence', event.target.value as LeadershipRitual['cadence'])}
+                onChange={value => set('cadence', value as LeadershipRitual['cadence'])}
+                options={ritualCadences.filter(cadence => cadence !== 'Pontual')}
                 className={fieldClass}
-              >
-                {ritualCadences.filter(cadence => cadence !== 'Pontual').map(cadence => <option key={cadence}>{cadence}</option>)}
-              </select>
+              />
             </label>
             <label className="grid gap-1.5 text-xs font-bold text-zinc-500">
               Próxima realização *
@@ -212,17 +210,11 @@ function RitualModal({
             <div className="grid gap-4 rounded-2xl border border-zinc-100 bg-white p-4 sm:grid-cols-2">
               <label className="grid gap-1.5 text-xs font-bold text-zinc-500">
                 Frente relacionada
-                <select value={draft.frontId} onChange={event => set('frontId', event.target.value)} className={fieldClass}>
-                  <option value="">Nenhuma</option>
-                  {fronts.map(front => <option key={front.id} value={front.id}>{front.name}</option>)}
-                </select>
+                <Select value={draft.frontId} onChange={value => set('frontId', value)} options={[{ value: '', label: 'Nenhuma' }, ...fronts.map(front => ({ value: front.id, label: front.name }))]} className={fieldClass} />
               </label>
               <label className="grid gap-1.5 text-xs font-bold text-zinc-500">
                 Pessoa relacionada
-                <select value={draft.personId} onChange={event => set('personId', event.target.value)} className={fieldClass}>
-                  <option value="">Nenhuma</option>
-                  {people.map(person => <option key={person.id} value={person.id}>{person.name}</option>)}
-                </select>
+                <Select value={draft.personId} onChange={value => set('personId', value)} options={[{ value: '', label: 'Nenhuma' }, ...people.map(person => ({ value: person.id, label: person.name }))]} className={fieldClass} />
               </label>
               <label className="grid gap-1.5 text-xs font-bold text-zinc-500 sm:col-span-2">
                 Preparo
@@ -291,6 +283,13 @@ export default function RituaisPage() {
 
   const weekRituals = rituals.filter(ritual => isWithinNextWeek(ritual.nextDate))
   const activeFilterCount = [typeFilter, cadenceFilter, relationFilter].filter(Boolean).length
+
+  const stats: PageStat[] = [
+    { label: 'Rituais da semana', value: weekRituals.length, detail: 'Próximos 7 dias' },
+    { label: '1:1s agendados', value: weekRituals.filter(item => item.type === '1:1').length, detail: 'Próximos 7 dias' },
+    { label: 'Checkpoints de frente', value: weekRituals.filter(item => item.type === 'Checkpoint de frente').length, detail: 'Próximos 7 dias' },
+    { label: 'Fechamento mensal', value: `${monthlyClose.progress}%`, detail: 'Progresso do ciclo' },
+  ]
   const nextRitual = [...rituals].filter(ritual => ritual.nextDate).sort((a, b) => a.nextDate.localeCompare(b.nextDate))[0]
 
   const createRitual = (ritual: LeadershipRitual) => {
@@ -321,85 +320,65 @@ export default function RituaisPage() {
   }
 
   return (
-    <main id="main-content" className="min-h-screen bg-[var(--retro-bg)] px-4 py-6 text-[var(--retro-ink)] sm:px-6 lg:px-8">
+    <main id="main-content" className="min-h-screen bg-[var(--bg-secondary)] px-4 py-6 text-[var(--text-primary)] sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[1500px]">
-        <header className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-          <div>
-            <h1 className="text-3xl font-black tracking-tight text-zinc-950 sm:text-4xl">Rituais</h1>
-            <p className="mt-2 max-w-2xl text-sm text-zinc-500">Cadência da liderança, checkpoints e fechamento mensal.</p>
-          </div>
-          <div className="flex w-full flex-col gap-2 sm:flex-row xl:w-auto">
-            <label className="relative min-w-0 flex-1 xl:w-80">
-              <span className="sr-only">Buscar rituais</span>
-              <Search size={17} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" />
-              <input
-                value={search}
-                onChange={event => setSearch(event.target.value)}
-                placeholder="Buscar rituais, pessoas, frentes..."
-                className={`${fieldClass} h-11 pl-10`}
-              />
-            </label>
-            <button
-              type="button"
-              onClick={() => setShowFilters(value => !value)}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 text-sm font-bold text-zinc-700"
-            >
-              <Filter size={16} /> Filtros
-              {activeFilterCount > 0 && <span className="rounded-full bg-[var(--retro-wine)] px-1.5 py-0.5 text-[10px] text-white">{activeFilterCount}</span>}
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowRitualModal(true)}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--retro-wine)] px-5 text-sm font-black text-white shadow-lg shadow-[rgba(135,0,47,0.16)]"
-            >
-              <Plus size={17} /> Novo ritual
-            </button>
-          </div>
-        </header>
+        <PageHeader
+          eyebrow="Cadência da liderança"
+          title="Rituais"
+          subtitle="Cadência da liderança, checkpoints e fechamento mensal."
+          stats={stats}
+          action={
+            <div className="flex w-full flex-col gap-2 sm:flex-row xl:w-auto">
+              <button
+                type="button"
+                onClick={() => setShowFilters(value => !value)}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 text-sm font-bold text-zinc-700"
+              >
+                <Filter size={16} /> Filtros
+                {activeFilterCount > 0 && <span className="rounded-full bg-[var(--retro-wine)] px-1.5 py-0.5 text-[10px] text-white">{activeFilterCount}</span>}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowRitualModal(true)}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--retro-wine)] px-5 text-sm font-black text-white shadow-lg shadow-[rgba(135,0,47,0.16)]"
+              >
+                <Plus size={17} /> Novo ritual
+              </button>
+            </div>
+          }
+        >
+          <label className="relative block w-full sm:max-w-md">
+            <span className="sr-only">Buscar rituais</span>
+            <Search size={17} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" />
+            <input
+              value={search}
+              onChange={event => setSearch(event.target.value)}
+              placeholder="Buscar rituais, pessoas, frentes..."
+              className={`${fieldClass} h-11 pl-10`}
+            />
+          </label>
+        </PageHeader>
 
-        <section aria-label="Indicadores de rituais" className="mt-7 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {[
-            { label: 'Rituais da semana', value: weekRituals.length, note: 'Próximos 7 dias', icon: CalendarDays, tone: 'bg-violet-50 text-violet-700' },
-            { label: '1:1s agendados', value: weekRituals.filter(item => item.type === '1:1').length, note: 'Próximos 7 dias', icon: UsersRound, tone: 'bg-amber-50 text-amber-700' },
-            { label: 'Checkpoints de frente', value: weekRituals.filter(item => item.type === 'Checkpoint de frente').length, note: 'Próximos 7 dias', icon: CalendarCheck2, tone: 'bg-blue-50 text-blue-700' },
-            { label: 'Fechamento mensal', value: `${monthlyClose.progress}%`, note: 'Progresso do ciclo', icon: ClipboardCheck, tone: 'bg-emerald-50 text-emerald-700' },
-          ].map(item => (
-            <article key={item.label} className={`${cardClass} flex items-center gap-4 p-4 sm:p-5`}>
-              <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-full ${item.tone}`}><item.icon size={21} /></span>
-              <div>
-                <p className="text-xs font-bold text-zinc-500">{item.label}</p>
-                <p className="mt-0.5 text-2xl font-black text-zinc-950">{item.value}</p>
-                <p className="text-xs text-zinc-400">{item.note}</p>
-              </div>
-            </article>
-          ))}
-        </section>
 
         {showFilters && (
           <section aria-label="Filtros de rituais" className={`${cardClass} mt-5 p-4`}>
             <div className="grid gap-3 sm:grid-cols-3">
               <label className="grid gap-1.5 text-xs font-bold text-zinc-500">
                 Tipo
-                <select value={typeFilter} onChange={event => setTypeFilter(event.target.value)} className={fieldClass}>
-                  <option value="">Todos</option>
-                  {ritualTypes.map(type => <option key={type}>{type}</option>)}
-                </select>
+                <Select value={typeFilter} onChange={setTypeFilter} options={[{ value: '', label: 'Todos' }, ...ritualTypes.map(type => ({ value: type, label: type }))]} className={fieldClass} />
               </label>
               <label className="grid gap-1.5 text-xs font-bold text-zinc-500">
                 Cadência
-                <select value={cadenceFilter} onChange={event => setCadenceFilter(event.target.value)} className={fieldClass}>
-                  <option value="">Todas</option>
-                  {ritualCadences.map(cadence => <option key={cadence}>{cadence}</option>)}
-                </select>
+                <Select value={cadenceFilter} onChange={setCadenceFilter} options={[{ value: '', label: 'Todas' }, ...ritualCadences.map(cadence => ({ value: cadence, label: cadence }))]} className={fieldClass} />
               </label>
               <label className="grid gap-1.5 text-xs font-bold text-zinc-500">
                 Conexão
-                <select value={relationFilter} onChange={event => setRelationFilter(event.target.value)} className={fieldClass}>
-                  <option value="">Todas</option>
-                  <option>Frente</option>
-                  <option>Pessoa</option>
-                  <option value="Geral">Cadência geral</option>
-                </select>
+                <Select
+                  value={relationFilter}
+                  onChange={setRelationFilter}
+                  options={[{ value: '', label: 'Todas' }, { value: 'Frente', label: 'Frente' }, { value: 'Pessoa', label: 'Pessoa' }, { value: 'Geral', label: 'Cadência geral' }]}
+                  className={fieldClass}
+                />
               </label>
             </div>
             {activeFilterCount > 0 && <button type="button" onClick={clearFilters} className="mt-3 text-xs font-black text-[var(--retro-wine)]">Limpar filtros</button>}

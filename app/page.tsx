@@ -9,7 +9,7 @@ export default function HomePage() {
     <main className="relative min-h-screen overflow-hidden bg-[var(--retro-wine)] text-white">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(255,255,255,0.1),transparent_28%),radial-gradient(circle_at_86%_18%,rgba(52,232,207,0.22),transparent_24%),linear-gradient(135deg,var(--retro-wine),var(--retro-wine-deep)_68%)]" />
       <div className="absolute -right-32 top-[-8rem] h-[44rem] w-[34rem] rotate-12 rounded-[6rem] border border-white/10 bg-white/5 shadow-2xl shadow-black/20" />
-      <div className="absolute right-16 top-0 hidden h-72 w-16 rounded-b-[2.5rem] bg-[var(--retro-cyan)]/90 shadow-2xl shadow-cyan-300/30 lg:block" />
+      <div className="absolute right-16 top-0 hidden h-72 w-16 rounded-b-[2.5rem] bg-[var(--retro-acqua)]/90 shadow-2xl shadow-emerald-300/30 lg:block" />
       <div className="absolute bottom-[-9rem] left-[-6rem] h-80 w-80 rounded-full border border-white/10 bg-white/5" />
       <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:64px_64px] opacity-45" />
 
@@ -31,8 +31,8 @@ export default function HomePage() {
               Responder
             </Link>
             <Link
-              href="/management"
-              className="inline-flex items-center gap-1.5 rounded-2xl bg-[var(--retro-cyan)] px-4 py-2.5 text-sm font-black text-[var(--retro-wine-deep)] shadow-xl shadow-cyan-300/20 transition hover:brightness-110"
+              href="/dashboard"
+              className="inline-flex items-center gap-1.5 rounded-2xl bg-[var(--retro-acqua)] px-4 py-2.5 text-sm font-black text-[var(--retro-wine-deep)] shadow-xl shadow-emerald-300/20 transition hover:brightness-110"
             >
               <LayoutDashboard size={16} />
               Cockpit

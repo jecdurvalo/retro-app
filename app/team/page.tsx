@@ -4,7 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import type { ElementType } from 'react'
 import { useMemo, useState } from 'react'
-import { Activity, Check, CloudRain, Frown, Home, Laugh, Meh, Plus, Send, Smile, User } from 'lucide-react'
+import { Activity, ArrowRight, Check, CloudRain, Frown, Handshake, Home, Laugh, Meh, Plus, Send, Smile, Target, TrendingUp, User } from 'lucide-react'
 import { supabase, SESSION_ID, CATEGORIES, type Category } from '@/lib/supabase'
 import { encodeMood, moodOptions, type MoodScore } from '@/lib/mood'
 
@@ -15,12 +15,12 @@ const categoryCopy: Record<Category, { prompt: string; hint: string; tone: strin
     tone: 'from-emerald-50 to-white border-emerald-200',
   },
   to_improve: {
-    prompt: 'Precisamos melhorar',
+    prompt: 'Podemos melhorar',
     hint: 'Pontos que precisam de ajuste.',
     tone: 'from-zinc-50 to-white border-zinc-200',
   },
   action_items: {
-    prompt: 'Vamos parar',
+    prompt: 'Vamos repensar',
     hint: 'O que não faz mais sentido manter.',
     tone: 'from-[rgba(149,82,81,0.1)] to-white border-[rgba(149,82,81,0.22)]',
   },
@@ -154,38 +154,46 @@ export default function TeamPage() {
 
         {step === 'rules' && (
           <div className="space-y-4">
-            <div className="rounded-[2rem] border border-black/5 bg-white/85 p-5 shadow-xl shadow-zinc-950/5 backdrop-blur-xl sm:p-7">
-              <p className="mb-1 text-xs font-black uppercase tracking-[0.2em] text-[var(--retro-wine)]">Antes de começar</p>
-              <h1 className="mt-3 text-3xl font-black leading-tight text-[#1f1f1f] sm:text-4xl">Três combinados</h1>
-              <ul className="mt-6 space-y-4">
-                <li className="flex items-start gap-3">
-                  <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-emerald-500" />
+            <div className="rounded-[2rem] border border-black/5 bg-white/90 p-6 shadow-xl shadow-zinc-950/5 backdrop-blur-xl sm:p-8">
+              <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[var(--retro-wine)]">Antes de começar</p>
+              <h1 className="mt-2 text-3xl font-black leading-tight text-[#1f1f1f] sm:text-4xl">Três combinados</h1>
+              <p className="mt-2 text-sm font-medium text-zinc-500">Para essa retro valer a pena, vamos seguir três combinados simples.</p>
+              <ul className="mt-7 space-y-3">
+                <li className="flex items-start gap-3.5 rounded-2xl border border-zinc-100 bg-zinc-50/60 p-4">
+                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-teal-600 text-white">
+                    <Handshake size={14} />
+                  </span>
                   <div>
-                    <p className="font-black text-zinc-900">Seja verdadeiro(a)</p>
-                    <p className="mt-0.5 text-sm text-zinc-500">Sua percepção honesta vale mais do que uma resposta bonita.</p>
+                    <p className="text-[15px] font-bold text-zinc-900">Seja verdadeiro(a)</p>
+                    <p className="mt-0.5 text-[13px] font-medium leading-5 text-zinc-500">Sua percepção honesta vale mais do que uma resposta bonita.</p>
                   </div>
                 </li>
-                <li className="flex items-start gap-3">
-                  <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-zinc-500" />
+                <li className="flex items-start gap-3.5 rounded-2xl border border-zinc-100 bg-zinc-50/60 p-4">
+                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-zinc-800 text-white">
+                    <Target size={14} />
+                  </span>
                   <div>
-                    <p className="font-black text-zinc-900">Enfrente os fatos brutais</p>
-                    <p className="mt-0.5 text-sm text-zinc-500">Só o que é dito pode ser melhorado.</p>
+                    <p className="text-[15px] font-bold text-zinc-900">Enfrente os fatos brutais</p>
+                    <p className="mt-0.5 text-[13px] font-medium leading-5 text-zinc-500">Só o que é dito pode ser melhorado.</p>
                   </div>
                 </li>
-                <li className="flex items-start gap-3">
-                  <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#955251]" />
+                <li className="flex items-start gap-3.5 rounded-2xl border border-zinc-100 bg-zinc-50/60 p-4">
+                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[var(--retro-wine)] text-white">
+                    <TrendingUp size={14} />
+                  </span>
                   <div>
-                    <p className="font-black text-zinc-900">Podemos sempre melhorar</p>
-                    <p className="mt-0.5 text-sm text-zinc-500">Cada retro é uma chance de ajustar a rota.</p>
+                    <p className="text-[15px] font-bold text-zinc-900">Podemos sempre melhorar</p>
+                    <p className="mt-0.5 text-[13px] font-medium leading-5 text-zinc-500">Cada retro é uma chance de ajustar a rota.</p>
                   </div>
                 </li>
               </ul>
             </div>
             <button
               onClick={() => setStep('mood')}
-              className="w-full rounded-2xl bg-[var(--retro-wine)] py-4 text-base font-black text-white shadow-lg shadow-[rgba(135,0,47,0.18)] transition hover:bg-[var(--retro-wine-deep)]"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--retro-wine)] py-3.5 text-sm font-bold text-white shadow-lg shadow-[rgba(135,0,47,0.18)] transition hover:bg-[var(--retro-wine-deep)]"
             >
               Entendido, vamos começar
+              <ArrowRight size={18} />
             </button>
           </div>
         )}
@@ -325,10 +333,18 @@ export default function TeamPage() {
 
             <button
               onClick={() => setDone(true)}
-              className="w-full rounded-2xl bg-[#1f1f1f] py-5 text-base font-black text-white shadow-xl shadow-zinc-950/15 transition hover:bg-black"
+              disabled={totalSubmitted === 0}
+              className={`w-full rounded-2xl py-5 text-base font-black shadow-xl transition ${
+                totalSubmitted > 0
+                  ? 'bg-[#1f1f1f] text-white shadow-zinc-950/15 hover:bg-black'
+                  : 'cursor-not-allowed border border-zinc-200 bg-white text-zinc-400 shadow-none'
+              }`}
             >
               Finalizar participação
             </button>
+            {totalSubmitted === 0 && (
+              <p className="text-center text-xs font-semibold text-zinc-400">Adicione pelo menos um item antes de finalizar.</p>
+            )}
           </div>
         )}
 

@@ -1,11 +1,28 @@
-// lib/evolution.ts - Gestão da evolução de carreira e desenvolvimento do time
-
-export const EVOLUTION_STORAGE_KEY = 'leadership-evolution-evidence'
+// lib/evolution.ts - Evidências, focos e compromissos do ciclo de desenvolvimento de liderança
 
 export const evolutionAreas = ['Modelo de gestão', 'Desenvolvimento do time', 'Exposição estratégica', 'Governança e decisões'] as const
 export const leadershipPrinciples = ['Time melhor que você', 'Care to Dare', 'Assuma o front', 'HQA', 'Cultura', 'Eficiência'] as const
 export type EvolutionArea = (typeof evolutionAreas)[number]
 export type LeadershipPrinciple = (typeof leadershipPrinciples)[number]
+
+function uid(prefix: string) {
+  return typeof crypto?.randomUUID === 'function' ? crypto.randomUUID() : `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`
+}
+
+function readJson<T>(key: string, fallback: T): T {
+  if (typeof window === 'undefined') return fallback
+  try {
+    const raw = window.localStorage.getItem(key)
+    return raw ? (JSON.parse(raw) as T) : fallback
+  } catch {
+    return fallback
+  }
+}
+
+function writeJson<T>(key: string, value: T) {
+  if (typeof window === 'undefined') return
+  window.localStorage.setItem(key, JSON.stringify(value))
+}
 
 // === EVIDÊNCIAS DE EVOLUÇÃO ===
 export type EvolutionEvidence = {
@@ -16,244 +33,183 @@ export type EvolutionEvidence = {
   principle: LeadershipPrinciple
   frontId: string
   personId: string
+  tag: string
   decision: string
   ritual: string
   learning: string
 }
 
-export const initialEvidence: EvolutionEvidence[] = []
+export const EVOLUTION_EVIDENCE_KEY = 'evolution-evidences'
+// Legacy keys used before evidences and reads/writes were unified onto one key.
+const LEGACY_EVIDENCE_KEYS = ['retro_sync_evidences', 'leadership-evolution-evidence']
 
 export function createEmptyEvidence(): EvolutionEvidence {
-  return { 
-    id: typeof crypto?.randomUUID === 'function' ? crypto.randomUUID() : `evidence-${Date.now()}`, 
-    description: '', 
-    date: new Date().toISOString().slice(0, 10), 
-    area: 'Modelo de gestão', 
-    principle: 'Assuma o front', 
-    frontId: '', 
-    personId: '', 
-    decision: '', 
-    ritual: '', 
-    learning: '' 
-  }
-}
-
-// === CHECKPOINTS COM LIDERANÇA ===
-export interface Checkpoint {
-  id: string
-  date: string
-  with: string // ex: "Katia"
-  topics: string[]
-  decisions: string[]
-  nextSteps: string[]
-  mood: '😀' | '🙂' | '😐' | '😟' | '😫'
-}
-
-export const initialCheckpoints: Checkpoint[] = []
-
-export function createEmptyCheckpoint(): Checkpoint {
   return {
-    id: typeof crypto?.randomUUID === 'function' ? crypto.randomUUID() : `checkpoint-${Date.now()}`,
+    id: uid('evidence'),
+    description: '',
     date: new Date().toISOString().slice(0, 10),
-    with: '',
-    topics: [],
-    decisions: [],
-    nextSteps: [],
-    mood: '🙂'
+    area: 'Modelo de gestão',
+    principle: 'Assuma o front',
+    frontId: '',
+    personId: '',
+    tag: '',
+    decision: '',
+    ritual: '',
+    learning: '',
   }
 }
 
-// === METAS DE EVOLUÇÃO PARA ESPEC ===
-export interface SpecGoal {
+function normalizeEvidence(raw: Partial<EvolutionEvidence>): EvolutionEvidence {
+  return { ...createEmptyEvidence(), ...raw, tag: raw.tag ?? '' }
+}
+
+export function loadEvidences(): EvolutionEvidence[] {
+  const current = readJson<EvolutionEvidence[] | null>(EVOLUTION_EVIDENCE_KEY, null)
+  if (current) return current.map(normalizeEvidence)
+
+  // First read after the storage-key unification: migrate whichever legacy key has data.
+  for (const key of LEGACY_EVIDENCE_KEYS) {
+    const legacy = readJson<EvolutionEvidence[] | null>(key, null)
+    if (legacy && legacy.length > 0) {
+      const migrated = legacy.map(normalizeEvidence)
+      writeJson(EVOLUTION_EVIDENCE_KEY, migrated)
+      return migrated
+    }
+  }
+  return []
+}
+
+export function saveEvidences(items: EvolutionEvidence[]) {
+  writeJson(EVOLUTION_EVIDENCE_KEY, items)
+}
+
+// === FOCOS ATUAIS (priorizados) ===
+export const focusPriorities = ['Alta', 'Média', 'Baixa'] as const
+export type FocusPriority = (typeof focusPriorities)[number]
+
+export type EvolutionFocus = {
   id: string
-  category: 'lideranca' | 'estrategia' | 'governanca' | 'tecnico' | 'cultura'
   title: string
   description: string
-  progress: number // 0-100
-  evidences: string[] // IDs das evidências
-  targetDate?: string
-  status: 'not-started' | 'in-progress' | 'completed'
+  priority: FocusPriority
+  done: boolean
+  createdAt: string
+  updatedAt: string
 }
 
-export const initialSpecGoals: SpecGoal[] = [
-  {
-    id: '1',
-    category: 'lideranca',
-    title: 'Desenvolver Kiki e Paulo para próximo nível',
-    description: 'Criar PDI personalizado, acompanhar evolução semanal e garantir promoções',
-    progress: 30,
-    evidences: [],
-    status: 'in-progress'
-  },
-  {
-    id: '2',
-    category: 'estrategia',
-    title: 'Transição do operacional para estratégico',
-    description: 'Reduzir tempo em operações diárias e aumentar participação em decisões estratégicas',
-    progress: 45,
-    evidences: [],
-    status: 'in-progress'
-  },
-  {
-    id: '3',
-    category: 'governanca',
-    title: 'Excelência em governança de antifraude',
-    description: 'Estabelecer processos claros de decisão, indicadores e documentação',
-    progress: 60,
-    evidences: [],
-    status: 'in-progress'
-  },
-  {
-    id: '4',
-    category: 'cultura',
-    title: 'Garantir cultura iFood no time emprestado',
-    description: 'Desafiar Bia e Nati a sair do operacional e olhar estratégico',
-    progress: 25,
-    evidences: [],
-    status: 'in-progress'
-  },
-  {
-    id: '5',
-    category: 'tecnico',
-    title: 'Especialização técnica em AI First',
-    description: 'Liderar cadência de AI First e estabelecer melhores práticas',
-    progress: 40,
-    evidences: [],
-    status: 'in-progress'
+export const EVOLUTION_FOCUS_KEY = 'evolution-focuses'
+
+export function createEmptyFocus(overrides: Partial<EvolutionFocus> = {}): EvolutionFocus {
+  const now = new Date().toISOString()
+  return {
+    id: uid('focus'),
+    title: '',
+    description: '',
+    priority: 'Média',
+    done: false,
+    createdAt: now,
+    updatedAt: now,
+    ...overrides,
   }
+}
+
+const defaultFocuses: EvolutionFocus[] = [
+  createEmptyFocus({
+    title: 'Critérios de decisão ainda ficam muito implícitos',
+    description: 'Transforme contexto em critérios claros para o time decidir sem depender de validação a cada passo.',
+    priority: 'Alta',
+  }),
+  createEmptyFocus({
+    title: 'Cobrança tende a aparecer tarde',
+    description: 'Use checkpoints curtos de frente, FCA e task para cobrar antes do atraso virar surpresa.',
+    priority: 'Média',
+  }),
+  createEmptyFocus({
+    title: 'Desenvolvimento precisa virar evidência',
+    description: 'Conecte 1:1s, PDIs e temas da retro a fatos observáveis de evolução do time.',
+    priority: 'Média',
+  }),
 ]
 
-type EvolutionData = {
-  evidences: EvolutionEvidence[]
-  checkpoints: Checkpoint[]
-  goals: SpecGoal[]
+export function loadFocuses(): EvolutionFocus[] {
+  const current = readJson<EvolutionFocus[] | null>(EVOLUTION_FOCUS_KEY, null)
+  if (current) return current
+  writeJson(EVOLUTION_FOCUS_KEY, defaultFocuses)
+  return defaultFocuses
 }
 
-// === FUNÇÕES DE STORAGE ===
-function getStorageKey(key: string): string {
-  return `retro_sync_${key}`
+export function saveFocuses(items: EvolutionFocus[]) {
+  writeJson(EVOLUTION_FOCUS_KEY, items)
 }
 
-export function loadEvolutionData(): EvolutionData {
-  if (typeof window === 'undefined') {
-    return {
-      evidences: [] as EvolutionEvidence[],
-      checkpoints: [] as Checkpoint[],
-      goals: [...initialSpecGoals]
-    }
-  }
-  
-  try {
-    const evidencesStr = localStorage.getItem(getStorageKey('evidences'))
-    const checkpointsStr = localStorage.getItem(getStorageKey('checkpoints'))
-    const goalsStr = localStorage.getItem(getStorageKey('spec_goals'))
-
-    return {
-      evidences: evidencesStr ? JSON.parse(evidencesStr) : [] as EvolutionEvidence[],
-      checkpoints: checkpointsStr ? JSON.parse(checkpointsStr) : [] as Checkpoint[],
-      goals: goalsStr ? JSON.parse(goalsStr) : [...initialSpecGoals]
-    }
-  } catch (error) {
-    console.error('Erro ao carregar dados de evolução:', error)
-    return {
-      evidences: [] as EvolutionEvidence[],
-      checkpoints: [] as Checkpoint[],
-      goals: [...initialSpecGoals]
-    }
-  }
+// === COMPROMISSOS DO CICLO (checklist) ===
+export type EvolutionCommitment = {
+  id: string
+  text: string
+  done: boolean
+  createdAt: string
 }
 
-export function saveEvolutionEvidence(items: EvolutionEvidence[]) { 
-  if (typeof window !== 'undefined') {
-    localStorage.setItem(EVOLUTION_STORAGE_KEY, JSON.stringify(items))
-  }
+export const EVOLUTION_COMMITMENTS_KEY = 'evolution-commitments'
+
+export function createEmptyCommitment(text = ''): EvolutionCommitment {
+  return { id: uid('commitment'), text, done: false, createdAt: new Date().toISOString() }
 }
 
-// Evidence CRUD
-export function saveEvidence(evidence: EvolutionEvidence) {
-  const data = loadEvolutionData()
-  data.evidences.push(evidence)
-  localStorage.setItem(getStorageKey('evidences'), JSON.stringify(data.evidences))
-  return evidence
+const defaultCommitments: EvolutionCommitment[] = [
+  createEmptyCommitment('Toda frente ativa precisa ter dono, próximo passo e checkpoint.'),
+  createEmptyCommitment('Todo ponto relevante da retro deve virar frente, task, FCA, decisão ou evidência de desenvolvimento.'),
+  createEmptyCommitment('Todo FCA aberto deve ter ação corretiva, responsável e prazo.'),
+]
+
+export function loadCommitments(): EvolutionCommitment[] {
+  const current = readJson<EvolutionCommitment[] | null>(EVOLUTION_COMMITMENTS_KEY, null)
+  if (current) return current
+  writeJson(EVOLUTION_COMMITMENTS_KEY, defaultCommitments)
+  return defaultCommitments
 }
 
-export function updateEvidence(evidence: EvolutionEvidence) {
-  const data = loadEvolutionData()
-  const index = data.evidences.findIndex(e => e.id === evidence.id)
-  if (index !== -1) {
-    data.evidences[index] = evidence
-    localStorage.setItem(getStorageKey('evidences'), JSON.stringify(data.evidences))
-  }
-  return evidence
+export function saveCommitments(items: EvolutionCommitment[]) {
+  writeJson(EVOLUTION_COMMITMENTS_KEY, items)
 }
 
-export function deleteEvidence(id: string) {
-  const data = loadEvolutionData()
-  data.evidences = data.evidences.filter(e => e.id !== id)
-  localStorage.setItem(getStorageKey('evidences'), JSON.stringify(data.evidences))
+// === CICLO ATUAL ===
+export type EvolutionCycle = {
+  label: string
+  startDate: string
+  endDate: string
 }
 
-// Checkpoint CRUD
-export function saveCheckpoint(checkpoint: Checkpoint) {
-  const data = loadEvolutionData()
-  data.checkpoints.push(checkpoint)
-  localStorage.setItem(getStorageKey('checkpoints'), JSON.stringify(data.checkpoints))
-  return checkpoint
+export const EVOLUTION_CYCLE_KEY = 'evolution-cycle'
+
+function defaultCycle(): EvolutionCycle {
+  const now = new Date()
+  const isFirstHalf = now.getMonth() < 6
+  const year = now.getFullYear()
+  return isFirstHalf
+    ? { label: `Ciclo H1 ${year}`, startDate: `${year}-01-01`, endDate: `${year}-06-30` }
+    : { label: `Ciclo H2 ${year}`, startDate: `${year}-07-01`, endDate: `${year}-12-31` }
 }
 
-export function updateCheckpoint(checkpoint: Checkpoint) {
-  const data = loadEvolutionData()
-  const index = data.checkpoints.findIndex(c => c.id === checkpoint.id)
-  if (index !== -1) {
-    data.checkpoints[index] = checkpoint
-    localStorage.setItem(getStorageKey('checkpoints'), JSON.stringify(data.checkpoints))
-  }
-  return checkpoint
+export function loadCycle(): EvolutionCycle {
+  const current = readJson<EvolutionCycle | null>(EVOLUTION_CYCLE_KEY, null)
+  if (current) return current
+  const created = defaultCycle()
+  writeJson(EVOLUTION_CYCLE_KEY, created)
+  return created
 }
 
-export function deleteCheckpoint(id: string) {
-  const data = loadEvolutionData()
-  data.checkpoints = data.checkpoints.filter(c => c.id !== id)
-  localStorage.setItem(getStorageKey('checkpoints'), JSON.stringify(data.checkpoints))
+export function saveCycle(cycle: EvolutionCycle) {
+  writeJson(EVOLUTION_CYCLE_KEY, cycle)
 }
 
-// Spec Goal CRUD
-export function updateSpecGoal(goal: SpecGoal) {
-  const data = loadEvolutionData()
-  const index = data.goals.findIndex(g => g.id === goal.id)
-  if (index !== -1) {
-    data.goals[index] = goal
-    localStorage.setItem(getStorageKey('spec_goals'), JSON.stringify(data.goals))
-  }
-  return goal
-}
-
-export function addEvidenceToGoal(goalId: string, evidenceId: string) {
-  const data = loadEvolutionData()
-  const goal = data.goals.find(g => g.id === goalId)
-  if (goal && !goal.evidences.includes(evidenceId)) {
-    goal.evidences.push(evidenceId)
-    localStorage.setItem(getStorageKey('spec_goals'), JSON.stringify(data.goals))
-  }
-}
-
-// Helpers
-export function getRecentCheckpoints(limit = 5) {
-  const data = loadEvolutionData()
-  return data.checkpoints
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, limit)
-}
-
-export function getEvidencesByType(type?: EvolutionEvidence['area']) {
-  const data = loadEvolutionData()
-  if (!type) return data.evidences
-  return data.evidences.filter(e => e.area === type)
-}
-
-export function getOverallProgress(): number {
-  const data = loadEvolutionData()
-  if (data.goals.length === 0) return 0
-  const total = data.goals.reduce((sum, goal) => sum + goal.progress, 0)
-  return Math.round(total / data.goals.length)
+export function cycleProgress(cycle: EvolutionCycle, today = new Date()) {
+  const start = new Date(`${cycle.startDate}T00:00:00`).getTime()
+  const end = new Date(`${cycle.endDate}T23:59:59`).getTime()
+  const now = today.getTime()
+  if (!(end > start)) return { percent: 0, daysRemaining: 0, daysTotal: 0 }
+  const percent = Math.round(Math.max(0, Math.min(1, (now - start) / (end - start))) * 100)
+  const daysRemaining = Math.max(0, Math.ceil((end - now) / (1000 * 60 * 60 * 24)))
+  const daysTotal = Math.round((end - start) / (1000 * 60 * 60 * 24))
+  return { percent, daysRemaining, daysTotal }
 }
