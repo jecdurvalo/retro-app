@@ -73,6 +73,10 @@ function formatTime(iso: string) {
   return new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' }).format(new Date(iso))
 }
 
+function createClientId(prefix: string) {
+  return typeof crypto?.randomUUID === 'function' ? crypto.randomUUID() : `${prefix}-${Date.now()}`
+}
+
 export default function RetroPage() {
   const [items, setItems] = useState<RetroItem[]>([])
   const [groups, setGroups] = useState<ThemeGroup[]>([])
@@ -91,6 +95,7 @@ export default function RetroPage() {
   const [feedback, setFeedback] = useState('')
   const [timerSeconds, setTimerSeconds] = useState(10 * 60)
   const [timerRunning, setTimerRunning] = useState(false)
+  const [showTimerDialog, setShowTimerDialog] = useState(false)
   const [showSaveDialog, setShowSaveDialog] = useState(false)
   const [leaderNameDraft, setLeaderNameDraft] = useState('Joana Durvalo')
   const [participantOptions, setParticipantOptions] = useState<string[]>([])
@@ -188,7 +193,7 @@ export default function RetroPage() {
     const title = groupDraftTitle[category].trim()
     const ids = itemsByCategory[category].filter(item => selectedIds.has(item.id)).map(item => item.id)
     if (!title || ids.length < 2) return
-    const group: ThemeGroup = { id: `group-${Date.now()}`, category, title, itemIds: ids }
+    const group: ThemeGroup = { id: createClientId('group'), category, title, itemIds: ids }
     persistGroups([...groups, group])
     clearSelection(category)
   }
@@ -257,6 +262,19 @@ export default function RetroPage() {
     setEditingHeader(false)
   }
 
+  function toggleTimer() {
+    setTimerRunning(value => {
+      const next = !value
+      if (next) setShowTimerDialog(true)
+      return next
+    })
+  }
+
+  function resetTimer() {
+    setTimerRunning(false)
+    setTimerSeconds(10 * 60)
+  }
+
   function toggleParticipant(name: string) {
     setSelectedParticipants(prev => {
       const next = new Set(prev)
@@ -273,7 +291,7 @@ export default function RetroPage() {
     const categoryLabel = (key: Category) => CATEGORIES.find(c => c.key === key)?.label ?? key
     const groupTitleFor = (itemId: string) => groups.find(g => g.itemIds.includes(itemId))?.title ?? null
     const snapshot: RetroSnapshot = {
-      id: `snapshot-${Date.now()}`,
+      id: createClientId('snapshot'),
       title: `Retro de ${new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(new Date())}`,
       date: new Date().toISOString().slice(0, 10),
       moodAverage,
@@ -370,6 +388,55 @@ export default function RetroPage() {
         </div>
       )}
 
+      {showTimerDialog && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Contagem regressiva da retro"
+          className="fixed inset-0 z-[120] grid place-items-center bg-zinc-950/55 p-4 text-white backdrop-blur-md"
+        >
+          <div className="grid w-full max-w-3xl place-items-center text-center">
+            <p className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-white/80">
+              <Clock3 size={15} />
+              Timebox da retro
+            </p>
+            <p className="mt-8 font-mono text-[clamp(5rem,18vw,12rem)] font-black leading-none tracking-normal">
+              {formatTimer(timerSeconds)}
+            </p>
+            <p className="mt-5 text-base font-semibold text-white/70">
+              {timerSeconds === 0 ? 'Tempo encerrado.' : timerRunning ? 'Contagem regressiva em andamento.' : 'Contagem pausada.'}
+            </p>
+
+            <div className="mt-10 flex flex-wrap justify-center gap-3">
+              <button
+                type="button"
+                onClick={toggleTimer}
+                className="inline-flex min-w-32 items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-black text-zinc-950 transition hover:bg-white/90"
+              >
+                {timerRunning ? <Pause size={17} /> : <Play size={17} />}
+                {timerRunning ? 'Pausar' : 'Retomar'}
+              </button>
+              <button
+                type="button"
+                onClick={resetTimer}
+                className="inline-flex min-w-32 items-center justify-center gap-2 rounded-2xl border border-white/25 bg-white/10 px-5 py-3 text-sm font-black text-white transition hover:bg-white/15"
+              >
+                <TimerReset size={17} />
+                Reiniciar
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowTimerDialog(false)}
+                className="inline-flex min-w-32 items-center justify-center gap-2 rounded-2xl border border-white/25 bg-transparent px-5 py-3 text-sm font-black text-white transition hover:bg-white/10"
+              >
+                <X size={17} />
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="mx-auto max-w-[1280px] space-y-5">
         <header className="relative overflow-hidden rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
           <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[var(--retro-wine)] via-[var(--retro-wine)]/70 to-transparent" />
@@ -450,7 +517,7 @@ export default function RetroPage() {
                 <div className="mt-3 flex gap-2">
                   <button
                     type="button"
-                    onClick={() => setTimerRunning(value => !value)}
+                    onClick={toggleTimer}
                     className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-[var(--retro-wine)] px-3 py-2 text-xs font-bold text-white hover:bg-[var(--retro-wine-hover)]"
                   >
                     {timerRunning ? <Pause size={14} /> : <Play size={14} />}
@@ -458,7 +525,7 @@ export default function RetroPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => { setTimerRunning(false); setTimerSeconds(10 * 60) }}
+                    onClick={resetTimer}
                     className="grid h-9 w-9 place-items-center rounded-xl border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50"
                     aria-label="Reiniciar cronômetro"
                   >
